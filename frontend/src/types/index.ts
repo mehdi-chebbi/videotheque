@@ -22,6 +22,8 @@ export interface Project {
 export interface Tag {
   id: string;
   name: string;
+  created_by: string | null;
+  created_by_username?: string;
   video_count?: number;
   created_at: string;
 }
@@ -64,6 +66,14 @@ export interface Stats {
   total_videos: number;
   total_projects: number;
   total_users: number;
+  total_tags: number;
+  total_storage_bytes: number;
+  total_storage_human: string;
+}
+
+export interface MyStats {
+  total_videos: number;
+  total_projects: number;
   total_tags: number;
   total_storage_bytes: number;
   total_storage_human: string;

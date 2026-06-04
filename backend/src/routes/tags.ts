@@ -9,8 +9,10 @@ const router = Router();
 router.get('/', authenticate, async (_req: Request, res: Response): Promise<void> => {
   try {
     const result = await db.query(`
-      SELECT t.*, (SELECT COUNT(*) FROM video_tags WHERE tag_id = t.id) as video_count
+      SELECT t.*, u.username as created_by_username,
+        (SELECT COUNT(*) FROM video_tags WHERE tag_id = t.id) as video_count
       FROM tags t
+      LEFT JOIN users u ON t.created_by = u.id
       ORDER BY t.name
     `);
     success(res, result.rows);
@@ -31,8 +33,8 @@ router.post('/', authenticate, requireUploaderOrAdmin(), async (req: Request, re
 
   try {
     const result = await db.query(
-      'INSERT INTO tags (name) VALUES ($1) RETURNING *',
-      [name.toLowerCase().trim()]
+      'INSERT INTO tags (name, created_by) VALUES ($1, $2) RETURNING *',
+      [name.toLowerCase().trim(), req.user!.userId]
     );
 
     success(res, result.rows[0], 201);
@@ -47,18 +49,27 @@ router.post('/', authenticate, requireUploaderOrAdmin(), async (req: Request, re
   }
 });
 
-// DELETE /tags/:id - Delete a tag (admin only)
-router.delete('/:id', authenticate, requireAdmin(), async (req: Request, res: Response): Promise<void> => {
+// DELETE /tags/:id - Delete a tag (owner or admin)
+router.delete('/:id', authenticate, async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
 
   try {
-    const result = await db.query('DELETE FROM tags WHERE id = $1 RETURNING id', [id]);
+    const existing = await db.query('SELECT created_by FROM tags WHERE id = $1', [id]);
 
-    if (result.rows.length === 0) {
+    if (existing.rows.length === 0) {
       error(res, 'Tag not found.', 404);
       return;
     }
 
+    // Only the creator or admin can delete
+    const isOwner = existing.rows[0].created_by === req.user!.userId;
+    const isAdmin = req.user!.role === 'admin';
+    if (!isOwner && !isAdmin) {
+      error(res, 'You can only delete tags you created.', 403);
+      return;
+    }
+
+    await db.query('DELETE FROM tags WHERE id = $1', [id]);
     success(res, { message: 'Tag deleted successfully.' });
   } catch (err) {
     console.error('[TAGS] Delete error:', err);

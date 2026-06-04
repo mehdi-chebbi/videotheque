@@ -2,8 +2,6 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
-  FolderOpen,
-  Video,
   Upload,
   Users,
   LogOut,
@@ -18,8 +16,7 @@ import { cn } from "../../lib/utils";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Projects", href: "/projects", icon: FolderOpen },
-  { name: "Videos", href: "/videos", icon: Video },
+  { name: "All Videos", href: "/videos", icon: Archive },
   { name: "Upload", href: "/upload", icon: Upload, requireUpload: true },
   { name: "Users", href: "/users", icon: Users, requireAdmin: true },
 ];

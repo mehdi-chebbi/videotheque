@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import db from '../db/connection';
-import { authenticate, requireAdmin } from '../middleware';
+import { authenticate, requireAdmin, requireUploaderOrAdmin } from '../middleware';
 import { success, error } from '../utils/response';
 
 const router = Router();
@@ -47,8 +47,8 @@ router.get('/:id', authenticate, async (req: Request, res: Response): Promise<vo
   }
 });
 
-// POST /projects - Create a project (admin only)
-router.post('/', authenticate, requireAdmin(), async (req: Request, res: Response): Promise<void> => {
+// POST /projects - Create a project (uploader or admin)
+router.post('/', authenticate, requireUploaderOrAdmin(), async (req: Request, res: Response): Promise<void> => {
   const { name, description } = req.body;
 
   if (!name) {
@@ -127,15 +127,22 @@ router.put('/:id', authenticate, requireAdmin(), async (req: Request, res: Respo
   }
 });
 
-// DELETE /projects/:id - Delete a project (admin only)
-router.delete('/:id', authenticate, requireAdmin(), async (req: Request, res: Response): Promise<void> => {
+// DELETE /projects/:id - Delete a project (owner or admin)
+router.delete('/:id', authenticate, async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
 
   try {
-    // Get project name for storage cleanup
-    const project = await db.query('SELECT name FROM projects WHERE id = $1', [id]);
-    if (project.rows.length === 0) {
+    const existing = await db.query('SELECT created_by FROM projects WHERE id = $1', [id]);
+    if (existing.rows.length === 0) {
       error(res, 'Project not found.', 404);
+      return;
+    }
+
+    // Only the creator or admin can delete
+    const isOwner = existing.rows[0].created_by === req.user!.userId;
+    const isAdmin = req.user!.role === 'admin';
+    if (!isOwner && !isAdmin) {
+      error(res, 'You can only delete projects you created.', 403);
       return;
     }
 

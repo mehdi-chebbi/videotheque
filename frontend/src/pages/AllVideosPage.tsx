@@ -1,31 +1,29 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Search, Video, Loader2, SlidersHorizontal } from "lucide-react";
-import { videosApi, projectsApi, tagsApi } from "../api";
-import { useAuthStore } from "../stores/auth";
+import { videosApi, projectsApi, tagsApi, usersApi } from "../api";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { formatBytes, formatDuration } from "../lib/utils";
-import type { Video as VideoType, Project, Tag, VideoFilters } from "../types";
+import type { Video as VideoType, Project, Tag, User, VideoFilters } from "../types";
 
-export default function VideosPage() {
+export default function AllVideosPage() {
   const [videos, setVideos] = useState<VideoType[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
   const [showFilters, setShowFilters] = useState(false);
-  const { user } = useAuthStore();
 
   const [filters, setFilters] = useState<VideoFilters>({
     page: 1,
     limit: 20,
     sort_by: "created_at",
     sort_order: "desc",
-    uploaded_by: user?.id,
   });
 
   const [searchInput, setSearchInput] = useState("");
@@ -33,7 +31,7 @@ export default function VideosPage() {
   const loadVideos = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await videosApi.list({ ...filters, uploaded_by: user?.id });
+      const res = await videosApi.list(filters);
       setVideos(res.data.data);
       setPagination(res.data.pagination);
     } catch (err) {
@@ -41,18 +39,23 @@ export default function VideosPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters, user?.id]);
+  }, [filters]);
 
   useEffect(() => {
-    if (user?.id) loadVideos();
-  }, [loadVideos, user?.id]);
+    loadVideos();
+  }, [loadVideos]);
 
   useEffect(() => {
     async function loadFilters() {
       try {
-        const [projectsRes, tagsRes] = await Promise.all([projectsApi.list(), tagsApi.list()]);
+        const [projectsRes, tagsRes, usersRes] = await Promise.all([
+          projectsApi.list(),
+          tagsApi.list(),
+          usersApi.list().catch(() => ({ data: { data: [] } })),
+        ]);
         setProjects(projectsRes.data.data);
         setTags(tagsRes.data.data);
+        setUsers(usersRes.data.data);
       } catch (err) {
         console.error("Load filters error:", err);
       }
@@ -66,7 +69,7 @@ export default function VideosPage() {
   };
 
   const clearFilters = () => {
-    setFilters({ page: 1, limit: 20, sort_by: "created_at", sort_order: "desc", uploaded_by: user?.id });
+    setFilters({ page: 1, limit: 20, sort_by: "created_at", sort_order: "desc" });
     setSearchInput("");
   };
 
@@ -74,9 +77,9 @@ export default function VideosPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">My Videos</h1>
+          <h1 className="text-2xl font-bold">All Videos</h1>
           <p className="text-muted-foreground">
-            {pagination.total} video{pagination.total !== 1 ? "s" : ""} uploaded by you
+            {pagination.total} video{pagination.total !== 1 ? "s" : ""} uploaded by everyone
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
@@ -91,7 +94,7 @@ export default function VideosPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             className="pl-9"
-            placeholder="Search your videos..."
+            placeholder="Search videos by title or description..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
@@ -103,7 +106,7 @@ export default function VideosPage() {
       {showFilters && (
         <Card>
           <CardContent className="p-4">
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="space-y-1">
                 <label className="text-xs font-medium">Project</label>
                 <Select
@@ -142,6 +145,28 @@ export default function VideosPage() {
                     {tags.map((t) => (
                       <SelectItem key={t.id} value={t.name}>
                         {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Uploader</label>
+                <Select
+                  value={filters.uploaded_by || "all"}
+                  onValueChange={(v) =>
+                    setFilters({ ...filters, uploaded_by: v === "all" ? undefined : v, page: 1 })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All users" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All users</SelectItem>
+                    {users.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.username}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -208,7 +233,7 @@ export default function VideosPage() {
             <p className="text-muted-foreground mt-1">
               {filters.search || filters.project_id || filters.tag
                 ? "Try adjusting your search or filters."
-                : "Upload your first video to get started."}
+                : "No videos have been uploaded yet."}
             </p>
           </CardContent>
         </Card>
@@ -233,7 +258,7 @@ export default function VideosPage() {
                   <CardContent className="p-3">
                     <h3 className="font-medium text-sm truncate">{video.title}</h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {video.project_name} &middot; {formatBytes(video.file_size)}
+                      {video.uploaded_by_username} &middot; {formatBytes(video.file_size)}
                     </p>
                     <div className="flex gap-1 mt-2 flex-wrap">
                       {video.tags.slice(0, 3).map((tag) => (

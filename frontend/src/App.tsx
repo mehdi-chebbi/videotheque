@@ -5,9 +5,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useAuthStore } from "./stores/auth";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
-import ProjectsPage from "./pages/ProjectsPage";
-import ProjectDetailPage from "./pages/ProjectDetailPage";
-import VideosPage from "./pages/VideosPage";
+import AllVideosPage from "./pages/AllVideosPage";
 import VideoPlayerPage from "./pages/VideoPlayerPage";
 import UploadPage from "./pages/UploadPage";
 import UsersPage from "./pages/UsersPage";
@@ -38,31 +36,11 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/projects"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <ProjectsPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/projects/:id"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <ProjectDetailPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/videos"
         element={
           <ProtectedRoute>
             <AppLayout>
-              <VideosPage />
+              <AllVideosPage />
             </AppLayout>
           </ProtectedRoute>
         }

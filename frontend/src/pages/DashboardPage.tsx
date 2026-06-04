@@ -1,80 +1,163 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
   Video,
   FolderOpen,
-  Users,
   Tag,
   HardDrive,
-  ArrowRight,
-  TrendingUp,
+  Trash2,
+  Upload,
+  Search,
+  Loader2,
+  CheckSquare,
+  Square,
 } from "lucide-react";
-import { statsApi, videosApi, projectsApi } from "../api";
+import { statsApi, videosApi, projectsApi, tagsApi } from "../api";
 import { useAuthStore } from "../stores/auth";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { formatBytes, formatDuration, formatDate } from "../lib/utils";
-import type { Stats, Video as VideoType, Project } from "../types";
+import { Input } from "../components/ui/input";
+import { Badge } from "../components/ui/badge";
+import { formatBytes, formatDuration } from "../lib/utils";
+import type { MyStats, Video as VideoType, Project, Tag as TagType } from "../types";
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [recentVideos, setRecentVideos] = useState<VideoType[]>([]);
+  const [stats, setStats] = useState<MyStats | null>(null);
+  const [videos, setVideos] = useState<VideoType[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [tags, setTags] = useState<TagType[]>([]);
   const [loading, setLoading] = useState(true);
-  const { canUpload } = useAuthStore();
+  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const { canUpload, user } = useAuthStore();
+
+  const loadDashboard = useCallback(async () => {
+    try {
+      const [statsRes, videosRes, projectsRes, tagsRes] = await Promise.all([
+        statsApi.getMine(),
+        videosApi.list({
+          limit: 20,
+          sort_by: "created_at",
+          sort_order: "desc",
+          uploaded_by: user?.id,
+          search: searchQuery || undefined,
+        }),
+        projectsApi.list(),
+        tagsApi.list(),
+      ]);
+      setStats(statsRes.data.data);
+      setVideos(videosRes.data.data);
+      setPagination(videosRes.data.pagination);
+      setProjects(projectsRes.data.data);
+      setTags(tagsRes.data.data);
+    } catch (err) {
+      console.error("Dashboard load error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id, searchQuery]);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [statsRes, videosRes, projectsRes] = await Promise.all([
-          statsApi.get(),
-          videosApi.list({ limit: 6, sort_by: "created_at", sort_order: "desc" }),
-          projectsApi.list(),
-        ]);
-        setStats(statsRes.data.data);
-        setRecentVideos(videosRes.data.data);
-        setProjects(projectsRes.data.data);
-      } catch (err) {
-        console.error("Dashboard load error:", err);
-      } finally {
-        setLoading(false);
-      }
+    if (user?.id) loadDashboard();
+  }, [loadDashboard, user?.id]);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === videos.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(videos.map((v) => v.id)));
     }
-    load();
-  }, []);
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Delete ${selectedIds.size} video(s)? This cannot be undone.`)) return;
+    setDeleting(true);
+    try {
+      await videosApi.batchDelete(Array.from(selectedIds));
+      setSelectedIds(new Set());
+      loadDashboard();
+    } catch (err) {
+      console.error("Batch delete error:", err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearchQuery(searchInput);
+    setSelectedIds(new Set());
+  };
+
+  const canDeleteTag = (tag: TagType) => tag.created_by === user?.id || user?.role === "admin";
+  const canDeleteProject = (proj: Project) => proj.created_by === user?.id || user?.role === "admin";
+
+  const handleDeleteTag = async (id: string, name: string) => {
+    if (!confirm(`Delete tag "${name}"?`)) return;
+    try {
+      const { tagsApi } = await import("../api");
+      await tagsApi.delete(id);
+      loadDashboard();
+    } catch (err) {
+      console.error("Delete tag error:", err);
+    }
+  };
+
+  const handleDeleteProject = async (id: string, name: string) => {
+    if (!confirm(`Delete project "${name}" and all its videos?`)) return;
+    try {
+      const { projectsApi } = await import("../api");
+      await projectsApi.delete(id);
+      loadDashboard();
+    } catch (err) {
+      console.error("Delete project error:", err);
+    }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
       </div>
     );
   }
 
   const statCards = [
-    { label: "Total Videos", value: stats?.total_videos ?? 0, icon: Video, color: "text-red-500" },
-    { label: "Projects", value: stats?.total_projects ?? 0, icon: FolderOpen, color: "text-amber-500" },
-    { label: "Users", value: stats?.total_users ?? 0, icon: Users, color: "text-green-500" },
-    { label: "Tags", value: stats?.total_tags ?? 0, icon: Tag, color: "text-purple-500" },
-    { label: "Storage Used", value: stats?.total_storage_human ?? "0 B", icon: HardDrive, color: "text-blue-500" },
+    { label: "My Videos", value: stats?.total_videos ?? 0, icon: Video, color: "text-red-500" },
+    { label: "My Projects", value: stats?.total_projects ?? 0, icon: FolderOpen, color: "text-amber-500" },
+    { label: "My Tags", value: stats?.total_tags ?? 0, icon: Tag, color: "text-purple-500" },
+    { label: "My Storage", value: stats?.total_storage_human ?? "0 B", icon: HardDrive, color: "text-emerald-500" },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Overview of your video archive</p>
+          <h1 className="text-2xl font-bold">My Dashboard</h1>
+          <p className="text-muted-foreground">Your videos, stats, and settings</p>
         </div>
         {canUpload() && (
           <Link to="/upload">
-            <Button>Upload Video</Button>
+            <Button><Upload className="h-4 w-4 mr-2" /> Upload Videos</Button>
           </Link>
         )}
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statCards.map((stat) => (
           <Card key={stat.label}>
             <CardContent className="p-4">
@@ -90,98 +173,204 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Recent Videos + Projects */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Recent Videos */}
-        <div className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Recent Videos</h2>
-            <Link to="/videos">
-              <Button variant="ghost" size="sm">
-                View all <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </Link>
-          </div>
-          {recentVideos.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center text-muted-foreground">
-                No videos uploaded yet. Start by uploading your first video!
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {recentVideos.map((video) => (
-                <Link key={video.id} to={`/videos/${video.id}`}>
-                  <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
-                    <div className="aspect-video bg-muted relative">
-                      <img
-                        src={`/api/videos/${video.id}/thumbnail`}
-                        alt={video.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "";
-                          (e.target as HTMLImageElement).classList.add("flex", "items-center", "justify-center");
-                        }}
-                      />
-                      {video.duration && (
-                        <span className="absolute bottom-1 right-1 bg-black/75 text-white text-xs px-1.5 py-0.5 rounded">
-                          {formatDuration(video.duration)}
-                        </span>
-                      )}
-                    </div>
-                    <CardContent className="p-3">
-                      <h3 className="font-medium text-sm truncate">{video.title}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {video.project_name} &middot; {formatBytes(video.file_size)}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
+      {/* Projects & Tags side by side */}
+      <div className="grid md:grid-cols-2 gap-4">
+        {/* Projects */}
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-semibold text-sm mb-3">Projects ({projects.length})</h3>
+            {projects.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No projects yet</p>
+            ) : (
+              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                {projects.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between py-1 px-2 rounded hover:bg-accent group">
+                    <span className="text-sm truncate">{p.name}</span>
+                    <span className="text-xs text-muted-foreground mr-2">{p.video_count ?? 0}</span>
+                    {canDeleteProject(p) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 shrink-0"
+                        onClick={() => handleDeleteProject(p.id, p.name)}
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Tags */}
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-semibold text-sm mb-3">Tags ({tags.length})</h3>
+            {tags.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No tags yet</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
+                {tags.map((t) => (
+                  <Badge
+                    key={t.id}
+                    variant="secondary"
+                    className="group relative pr-6"
+                  >
+                    {t.name}
+                    {canDeleteTag(t) && (
+                      <button
+                        className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 hover:text-destructive"
+                        onClick={() => handleDeleteTag(t.id, t.name)}
+                      >
+                        <Trash2 className="h-2.5 w-2.5" />
+                      </button>
+                    )}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* My Videos */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">My Videos ({pagination.total})</h2>
+          {selectedIds.size > 0 && (
+            <Button variant="destructive" size="sm" onClick={handleDeleteSelected} disabled={deleting}>
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
+              Delete ({selectedIds.size})
+            </Button>
           )}
         </div>
 
-        {/* Projects Sidebar */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Projects</h2>
-            <Link to="/projects">
-              <Button variant="ghost" size="sm">
-                View all <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </Link>
+        {/* Search */}
+        <form onSubmit={handleSearch} className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              className="pl-9"
+              placeholder="Search your videos..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+            />
           </div>
-          {projects.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 text-center text-muted-foreground text-sm">
-                No projects yet
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-2">
-              {projects.slice(0, 8).map((project) => (
-                <Link key={project.id} to={`/projects/${project.id}`}>
-                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                    <CardContent className="p-3 flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-sm">{project.name}</p>
-                        {project.description && (
-                          <p className="text-xs text-muted-foreground truncate max-w-[180px]">
-                            {project.description}
-                          </p>
+          <Button type="submit" variant="outline">Search</Button>
+        </form>
+
+        {videos.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center text-muted-foreground">
+              No videos yet. Upload your first video!
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Select all row */}
+            <div className="flex items-center gap-2 px-1">
+              <button onClick={toggleSelectAll} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+                {selectedIds.size === videos.length ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                Select all
+              </button>
+            </div>
+
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {videos.map((video) => (
+                <div key={video.id} className="relative">
+                  {/* Selection checkbox overlay */}
+                  <button
+                    onClick={() => toggleSelect(video.id)}
+                    className={`absolute top-2 left-2 z-10 rounded p-0.5 transition-colors ${
+                      selectedIds.has(video.id) ? "bg-primary text-primary-foreground" : "bg-black/50 text-white opacity-0 hover:opacity-100 group-hover:opacity-100"
+                    }`}
+                    style={{ opacity: selectedIds.has(video.id) ? 1 : undefined }}
+                  >
+                    {selectedIds.has(video.id) ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                  </button>
+
+                  <Link to={`/videos/${video.id}`}>
+                    <Card className={`overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${selectedIds.has(video.id) ? "ring-2 ring-primary" : ""}`}>
+                      <div className="aspect-video bg-muted relative">
+                        <img
+                          src={`/api/videos/${video.id}/thumbnail`}
+                          alt={video.title}
+                          className="w-full h-full object-cover"
+                        />
+                        {video.duration && (
+                          <span className="absolute bottom-1 right-1 bg-black/75 text-white text-xs px-1.5 py-0.5 rounded">
+                            {formatDuration(video.duration)}
+                          </span>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground bg-secondary rounded-full px-2 py-0.5">
-                        {project.video_count ?? 0}
-                      </span>
-                    </CardContent>
-                  </Card>
-                </Link>
+                      <CardContent className="p-3">
+                        <h3 className="font-medium text-sm truncate">{video.title}</h3>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {video.project_name} &middot; {formatBytes(video.file_size)}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                </div>
               ))}
             </div>
-          )}
-        </div>
+
+            {/* Pagination */}
+            {pagination.totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pagination.page <= 1}
+                  onClick={() => {
+                    setLoading(true);
+                    videosApi.list({
+                      page: pagination.page - 1,
+                      limit: 20,
+                      sort_by: "created_at",
+                      sort_order: "desc",
+                      uploaded_by: user?.id,
+                      search: searchQuery || undefined,
+                    }).then((res) => {
+                      setVideos(res.data.data);
+                      setPagination(res.data.pagination);
+                      setSelectedIds(new Set());
+                    }).finally(() => setLoading(false));
+                  }}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pagination.page >= pagination.totalPages}
+                  onClick={() => {
+                    setLoading(true);
+                    videosApi.list({
+                      page: pagination.page + 1,
+                      limit: 20,
+                      sort_by: "created_at",
+                      sort_order: "desc",
+                      uploaded_by: user?.id,
+                      search: searchQuery || undefined,
+                    }).then((res) => {
+                      setVideos(res.data.data);
+                      setPagination(res.data.pagination);
+                      setSelectedIds(new Set());
+                    }).finally(() => setLoading(false));
+                  }}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

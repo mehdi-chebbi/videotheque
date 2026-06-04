@@ -24,7 +24,7 @@ export default function ProjectsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ name: "", description: "" });
   const [creating, setCreating] = useState(false);
-  const { isAdmin } = useAuthStore();
+  const { isAdmin, canUpload } = useAuthStore();
   const navigate = useNavigate();
 
   const loadProjects = async () => {
@@ -82,7 +82,7 @@ export default function ProjectsPage() {
           <h1 className="text-2xl font-bold">Projects</h1>
           <p className="text-muted-foreground">{projects.length} project{projects.length !== 1 ? "s" : ""}</p>
         </div>
-        {isAdmin() && (
+        {canUpload() && (
           <Button onClick={() => setShowCreate(true)}>
             <Plus className="h-4 w-4 mr-2" /> New Project
           </Button>
@@ -95,7 +95,7 @@ export default function ProjectsPage() {
             <FolderOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="font-semibold text-lg">No projects yet</h3>
             <p className="text-muted-foreground mt-1">Create your first project to start organizing videos.</p>
-            {isAdmin() && (
+            {canUpload() && (
               <Button className="mt-4" onClick={() => setShowCreate(true)}>
                 <Plus className="h-4 w-4 mr-2" /> Create Project
               </Button>

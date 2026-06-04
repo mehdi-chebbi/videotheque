@@ -6,6 +6,7 @@ import type {
   Video,
   Tag,
   Stats,
+  MyStats,
   PaginatedResponse,
   VideoFilters,
 } from "../types";
@@ -62,6 +63,7 @@ export const videosApi = {
   update: (id: string, data: { title?: string; description?: string; project_id?: string; tags?: string[] }) =>
     api.put<{ success: boolean; data: Video }>(`/videos/${id}`, data),
   delete: (id: string) => api.delete(`/videos/${id}`),
+  batchDelete: (ids: string[]) => api.post<{ success: boolean; data: { message: string } }>("/videos/batch-delete", { ids }),
   streamUrl: (id: string) => `/api/videos/${id}/stream`,
   thumbnailUrl: (id: string) => `/api/videos/${id}/thumbnail`,
 };
@@ -76,4 +78,5 @@ export const tagsApi = {
 // ─── Stats ─────────────────────────────────────────────────────
 export const statsApi = {
   get: () => api.get<{ success: boolean; data: Stats }>("/stats"),
+  getMine: () => api.get<{ success: boolean; data: MyStats }>("/stats?mine=true"),
 };

@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { initializeDatabase } from './db/init';
 import { ensureStorageDir } from './services/storage';
-import { errorHandler } from './middleware';
+import { errorHandler, authenticate } from './middleware';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import projectRoutes from './routes/projects';
@@ -26,28 +26,51 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// ─── Stats (admin only) ─────────────────────────────────────
-app.get('/stats', async (_req, res) => {
+// ─── Stats (authenticated, ?mine=true for user-specific) ────
+app.get('/stats', authenticate, async (req, res) => {
   try {
-    const [videos, projects, users, tags, storage] = await Promise.all([
-      db.query('SELECT COUNT(*) as count FROM videos'),
-      db.query('SELECT COUNT(*) as count FROM projects'),
-      db.query('SELECT COUNT(*) as count FROM users'),
-      db.query('SELECT COUNT(*) as count FROM tags'),
-      db.query('SELECT COALESCE(SUM(file_size), 0) as total_bytes FROM videos'),
-    ]);
+    const mine = req.query.mine === 'true';
 
-    res.json({
-      success: true,
-      data: {
-        total_videos: parseInt(videos.rows[0].count, 10),
-        total_projects: parseInt(projects.rows[0].count, 10),
-        total_users: parseInt(users.rows[0].count, 10),
-        total_tags: parseInt(tags.rows[0].count, 10),
-        total_storage_bytes: parseInt(storage.rows[0].total_bytes, 10),
-        total_storage_human: formatBytes(parseInt(storage.rows[0].total_bytes, 10)),
-      },
-    });
+    if (mine) {
+      const userId = req.user!.userId;
+      const [videos, projects, tags, storage] = await Promise.all([
+        db.query('SELECT COUNT(*) as count FROM videos WHERE uploaded_by = $1', [userId]),
+        db.query('SELECT COUNT(DISTINCT project_id) as count FROM videos WHERE uploaded_by = $1', [userId]),
+        db.query('SELECT COUNT(DISTINCT vt.tag_id) as count FROM video_tags vt JOIN videos v ON vt.video_id = v.id WHERE v.uploaded_by = $1', [userId]),
+        db.query('SELECT COALESCE(SUM(file_size), 0) as total_bytes FROM videos WHERE uploaded_by = $1', [userId]),
+      ]);
+
+      res.json({
+        success: true,
+        data: {
+          total_videos: parseInt(videos.rows[0].count, 10),
+          total_projects: parseInt(projects.rows[0].count, 10),
+          total_tags: parseInt(tags.rows[0].count, 10),
+          total_storage_bytes: parseInt(storage.rows[0].total_bytes, 10),
+          total_storage_human: formatBytes(parseInt(storage.rows[0].total_bytes, 10)),
+        },
+      });
+    } else {
+      const [videos, projects, users, tags, storage] = await Promise.all([
+        db.query('SELECT COUNT(*) as count FROM videos'),
+        db.query('SELECT COUNT(*) as count FROM projects'),
+        db.query('SELECT COUNT(*) as count FROM users'),
+        db.query('SELECT COUNT(*) as count FROM tags'),
+        db.query('SELECT COALESCE(SUM(file_size), 0) as total_bytes FROM videos'),
+      ]);
+
+      res.json({
+        success: true,
+        data: {
+          total_videos: parseInt(videos.rows[0].count, 10),
+          total_projects: parseInt(projects.rows[0].count, 10),
+          total_users: parseInt(users.rows[0].count, 10),
+          total_tags: parseInt(tags.rows[0].count, 10),
+          total_storage_bytes: parseInt(storage.rows[0].total_bytes, 10),
+          total_storage_human: formatBytes(parseInt(storage.rows[0].total_bytes, 10)),
+        },
+      });
+    }
   } catch (err) {
     console.error('[STATS] Error:', err);
     res.status(500).json({ error: 'Internal server error.' });

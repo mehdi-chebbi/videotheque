@@ -4,7 +4,7 @@ import fs from 'fs';
 import db from '../db/connection';
 import { authenticate, requireAdmin, requireUploaderOrAdmin, upload } from '../middleware';
 import { success, error, paginated } from '../utils/response';
-import { createVideoDir, moveFile, deleteDir, getFileSize, getStoragePath } from '../services/storage';
+import { getVideoPaths, moveFile, deleteVideoFiles, deleteFile, getFileSize, getStoragePath } from '../services/storage';
 import { processVideo } from '../services/thumbnail';
 
 const router = Router();
@@ -154,7 +154,7 @@ router.get('/:id', authenticate, async (req: Request, res: Response): Promise<vo
 });
 
 // GET /videos/:id/stream - Stream the video file
-router.get('/:id/stream', authenticate, async (req: Request, res: Response): Promise<void> => {
+router.get('/:id/stream', async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
 
   try {
@@ -219,7 +219,7 @@ router.get('/:id/stream', authenticate, async (req: Request, res: Response): Pro
 });
 
 // GET /videos/:id/thumbnail - Serve thumbnail image
-router.get('/:id/thumbnail', authenticate, async (req: Request, res: Response): Promise<void> => {
+router.get('/:id/thumbnail', async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
 
   try {
@@ -270,26 +270,20 @@ router.post('/', authenticate, requireUploaderOrAdmin(), upload.single('video'),
       return;
     }
 
-    const projectName = projectResult.rows[0].name;
-
-    // Create video directory in project folder
-    const { videoDir, videoId } = createVideoDir(projectName);
+    // Generate video ID and paths
+    const ext = path.extname(file.originalname) || path.extname(file.path);
+    const { videoId, videoPath, thumbnailPath } = getVideoPaths(ext);
 
     // Move video file from temp to final location
-    const ext = path.extname(file.originalname) || path.extname(file.path);
-    const finalVideoPath = path.join(videoDir, `video${ext}`);
-    moveFile(file.path, finalVideoPath);
+    moveFile(file.path, videoPath);
 
     // Get file size
-    const fileSize = getFileSize(finalVideoPath);
+    const fileSize = getFileSize(videoPath);
 
     // Generate thumbnail + extract metadata with ffmpeg
-    const thumbnailFileName = 'thumbnail.png';
-    const thumbnailPath = path.join(videoDir, thumbnailFileName);
-
     let metadata = { duration: null as number | null, format: null as string | null, thumbnailPath: '' };
     try {
-      metadata = await processVideo(finalVideoPath, thumbnailPath);
+      metadata = await processVideo(videoPath, thumbnailPath);
     } catch (err) {
       console.warn('[VIDEOS] FFmpeg processing failed, continuing without metadata:', (err as Error).message);
     }
@@ -314,7 +308,7 @@ router.post('/', authenticate, requireUploaderOrAdmin(), upload.single('video'),
         title,
         description || null,
         project_id,
-        finalVideoPath,
+        videoPath,
         metadata.thumbnailPath || null,
         fileSize,
         metadata.duration,
@@ -472,9 +466,12 @@ router.delete('/:id', authenticate, requireUploaderOrAdmin(), async (req: Reques
 
     const video = existing.rows[0];
 
-    // Delete files from disk
-    const videoDir = path.dirname(video.file_path);
-    deleteDir(videoDir);
+    // Delete video and thumbnail files from disk
+    const ext = path.extname(video.file_path);
+    deleteVideoFiles(video.id, ext);
+    if (video.thumbnail_path) {
+      deleteFile(video.thumbnail_path);
+    }
 
     // Delete from database (cascade will handle video_tags)
     await db.query('DELETE FROM videos WHERE id = $1', [id]);
@@ -482,6 +479,45 @@ router.delete('/:id', authenticate, requireUploaderOrAdmin(), async (req: Reques
     success(res, { message: 'Video deleted successfully.' });
   } catch (err) {
     console.error('[VIDEOS] Delete error:', err);
+    error(res, 'Internal server error.', 500);
+  }
+});
+
+// POST /videos/batch-delete - Delete multiple videos (owner or admin)
+router.post('/batch-delete', authenticate, requireUploaderOrAdmin(), async (req: Request, res: Response): Promise<void> => {
+  const { ids } = req.body;
+
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    error(res, 'ids array is required.', 400);
+    return;
+  }
+
+  try {
+    const videos = await db.query('SELECT id, file_path, thumbnail_path, uploaded_by FROM videos WHERE id = ANY($1)', [ids]);
+
+    // Check ownership for each video
+    for (const video of videos.rows) {
+      if (req.user!.role === 'uploader' && video.uploaded_by !== req.user!.userId) {
+        error(res, 'You can only delete your own videos.', 403);
+        return;
+      }
+    }
+
+    // Delete files from disk
+    for (const video of videos.rows) {
+      const ext = path.extname(video.file_path);
+      deleteVideoFiles(video.id, ext);
+      if (video.thumbnail_path) {
+        deleteFile(video.thumbnail_path);
+      }
+    }
+
+    // Delete from database
+    await db.query('DELETE FROM videos WHERE id = ANY($1)', [ids]);
+
+    success(res, { message: `${videos.rows.length} video(s) deleted successfully.` });
+  } catch (err) {
+    console.error('[VIDEOS] Batch delete error:', err);
     error(res, 'Internal server error.', 500);
   }
 });

@@ -43,6 +43,7 @@ const CREATE_TAGS_TABLE = `
 CREATE TABLE IF NOT EXISTS tags (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(100) NOT NULL UNIQUE,
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 `;
@@ -61,6 +62,7 @@ CREATE INDEX IF NOT EXISTS idx_videos_uploaded_by ON videos(uploaded_by);
 CREATE INDEX IF NOT EXISTS idx_videos_created_at ON videos(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_videos_title ON videos USING gin(to_tsvector('simple', title));
 CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name);
+CREATE INDEX IF NOT EXISTS idx_tags_created_by ON tags(created_by);
 `;
 
 const CREATE_UPDATED_AT_TRIGGER = `
@@ -103,7 +105,7 @@ $$;
 
 const SEED_ADMIN = `
 INSERT INTO users (username, password_hash, role)
-SELECT 'admin', '$2a$10$dummyhashreplaceonfirstsetup', 'admin'
+SELECT 'admin', '$2a$12$C0Lq7EwPHmedn76pj76sL.REyOfhM/Ul5LqxmvMcakhm39hHOnMVe', 'admin'
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
 `;
 
@@ -119,6 +121,14 @@ export async function initializeDatabase(): Promise<void> {
     await client.query(CREATE_TAGS_TABLE);
     await client.query(CREATE_VIDEOS_TABLE);
     await client.query(CREATE_VIDEO_TAGS_TABLE);
+
+    // Add created_by column to tags if it doesn't exist (migration)
+    const tagsCols = await client.query(`SELECT column_name FROM information_schema.columns WHERE table_name = 'tags' AND column_name = 'created_by'`);
+    if (tagsCols.rows.length === 0) {
+      console.log('[DB] Migrating tags table: adding created_by column...');
+      await client.query('ALTER TABLE tags ADD COLUMN created_by UUID REFERENCES users(id) ON DELETE SET NULL');
+      await client.query('CREATE INDEX IF NOT EXISTS idx_tags_created_by ON tags(created_by)');
+    }
 
     console.log('[DB] Creating indexes...');
     await client.query(CREATE_INDEXES);

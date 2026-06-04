@@ -5,39 +5,26 @@ import { v4 as uuidv4 } from 'uuid';
 const STORAGE_PATH = process.env.STORAGE_PATH || './storage';
 
 /**
- * Ensure the base storage directory exists
+ * Ensure the base storage directories exist
  */
 export function ensureStorageDir(): void {
-  if (!fs.existsSync(STORAGE_PATH)) {
-    fs.mkdirSync(STORAGE_PATH, { recursive: true });
-  }
-  const tempDir = path.join(STORAGE_PATH, 'temp');
-  if (!fs.existsSync(tempDir)) {
-    fs.mkdirSync(tempDir, { recursive: true });
+  for (const dir of [STORAGE_PATH, path.join(STORAGE_PATH, 'temp'), path.join(STORAGE_PATH, 'videos'), path.join(STORAGE_PATH, 'thumbnails')]) {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
   }
 }
 
 /**
- * Create a project directory in storage
+ * Generate a new video ID and return the paths for video file and thumbnail
  */
-export function createProjectDir(projectName: string): string {
-  const safeName = projectName.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
-  const projectDir = path.join(STORAGE_PATH, safeName);
-  if (!fs.existsSync(projectDir)) {
-    fs.mkdirSync(projectDir, { recursive: true });
-  }
-  return projectDir;
-}
-
-/**
- * Create a directory for a video within a project
- */
-export function createVideoDir(projectName: string): { videoDir: string; videoId: string } {
+export function getVideoPaths(ext: string): { videoId: string; videoPath: string; thumbnailPath: string } {
   const videoId = uuidv4();
-  const safeName = projectName.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
-  const videoDir = path.join(STORAGE_PATH, safeName, videoId);
-  fs.mkdirSync(videoDir, { recursive: true });
-  return { videoDir, videoId };
+  return {
+    videoId,
+    videoPath: path.join(STORAGE_PATH, 'videos', `${videoId}${ext}`),
+    thumbnailPath: path.join(STORAGE_PATH, 'thumbnails', `${videoId}.png`),
+  };
 }
 
 /**
@@ -61,12 +48,11 @@ export function deleteFile(filePath: string): void {
 }
 
 /**
- * Delete a directory recursively
+ * Delete both video and thumbnail files for a given video ID
  */
-export function deleteDir(dirPath: string): void {
-  if (fs.existsSync(dirPath)) {
-    fs.rmSync(dirPath, { recursive: true, force: true });
-  }
+export function deleteVideoFiles(videoId: string, ext: string): void {
+  deleteFile(path.join(STORAGE_PATH, 'videos', `${videoId}${ext}`));
+  deleteFile(path.join(STORAGE_PATH, 'thumbnails', `${videoId}.png`));
 }
 
 /**

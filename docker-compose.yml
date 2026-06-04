@@ -40,7 +40,7 @@ services:
       FFMPEG_PATH: /usr/bin/ffmpeg
       FFPROBE_PATH: /usr/bin/ffprobe
     volumes:
-      - video_storage:/app/storage
+      - ./backend/storage:/app/storage
     ports:
       - "4000:4000"
 
@@ -57,4 +57,3 @@ services:
 
 volumes:
   pgdata:
-  video_storage:
