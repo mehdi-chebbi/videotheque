@@ -1,29 +1,47 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #ffffff;
-  --color-foreground: #0a0a0a;
-  --color-card: #ffffff;
-  --color-card-foreground: #0a0a0a;
-  --color-popover: #ffffff;
-  --color-popover-foreground: #0a0a0a;
-  --color-primary: #171717;
-  --color-primary-foreground: #fafafa;
-  --color-secondary: #f5f5f5;
-  --color-secondary-foreground: #171717;
-  --color-muted: #f5f5f5;
-  --color-muted-foreground: #737373;
-  --color-accent: #f5f5f5;
-  --color-accent-foreground: #171717;
+  /* ── Primary: #3183d4 family ────────────────────────────── */
+  --color-primary: #3183d4;
+  --color-primary-light: #4d96dc;
+  --color-primary-dark: #1e6bb8;
+  --color-primary-deeper: #163d6a;
+  --color-primary-foreground: #ffffff;
+
+  /* ── Secondary: #fabb33 family ──────────────────────────── */
+  --color-secondary: #fabb33;
+  --color-secondary-light: #fcc95c;
+  --color-secondary-dark: #d9a01e;
+  --color-secondary-foreground: #1a1a1a;
+
+  /* ── Dark navy base ─────────────────────────────────────── */
+  --color-background: #0f1b2d;
+  --color-foreground: #e8edf5;
+  --color-card: #162236;
+  --color-card-foreground: #e8edf5;
+  --color-popover: #1a2a42;
+  --color-popover-foreground: #e8edf5;
+  --color-muted: #1e3050;
+  --color-muted-foreground: #8899b3;
+  --color-accent: #1e3050;
+  --color-accent-foreground: #fabb33;
   --color-destructive: #ef4444;
   --color-destructive-foreground: #fafafa;
-  --color-border: #e5e5e5;
-  --color-input: #e5e5e5;
-  --color-ring: #0a0a0a;
-  --radius-sm: 0.25rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
+  --color-border: #243a58;
+  --color-input: #243a58;
+  --color-ring: #fabb33;
+
+  /* ── Sidebar ────────────────────────────────────────────── */
+  --color-sidebar-bg: #0a1220;
+  --color-sidebar-foreground: #8899b3;
+  --color-sidebar-active: #3183d4;
+  --color-sidebar-hover: #162236;
+
+  /* ── Radius ─────────────────────────────────────────────── */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
 }
 
 @layer base {
@@ -31,12 +49,12 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 }
 
-/* Custom scrollbar */
+/* ── Custom scrollbar ──────────────────────────────────────── */
 .scrollbar-thin::-webkit-scrollbar {
   width: 6px;
 }
@@ -44,9 +62,49 @@
   background: transparent;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: #d1d5db;
+  background-color: #243a58;
   border-radius: 3px;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background-color: #9ca3af;
+  background-color: #3183d4;
+}
+
+/* ── Gradient helpers ──────────────────────────────────────── */
+.gradient-primary {
+  background: linear-gradient(135deg, #3183d4 0%, #1e6bb8 100%);
+}
+
+.gradient-accent {
+  background: linear-gradient(135deg, #3183d4 0%, #fabb33 100%);
+}
+
+.gradient-gold {
+  background: linear-gradient(135deg, #fabb33 0%, #d9a01e 100%);
+}
+
+.gradient-dark {
+  background: linear-gradient(135deg, #0f1b2d 0%, #162236 100%);
+}
+
+.gradient-header {
+  background: linear-gradient(135deg, #163d6a 0%, #0f1b2d 100%);
+}
+
+/* ── Glow effects ──────────────────────────────────────────── */
+.glow-primary {
+  box-shadow: 0 0 24px rgba(49, 131, 212, 0.35);
+}
+
+.glow-gold {
+  box-shadow: 0 0 24px rgba(250, 187, 51, 0.35);
+}
+
+/* ── Card hover lift ───────────────────────────────────────── */
+.card-hover {
+  transition: all 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(49, 131, 212, 0.15);
+  border-color: rgba(49, 131, 212, 0.3);
 }

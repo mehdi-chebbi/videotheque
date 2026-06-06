@@ -246,7 +246,7 @@ router.get('/:id/thumbnail', async (req: Request, res: Response): Promise<void> 
 
 // POST /videos - Upload a new video (admin + uploader)
 router.post('/', authenticate, requireUploaderOrAdmin(), upload.single('video'), async (req: Request, res: Response): Promise<void> => {
-  const { title, description, project_id, tags } = req.body;
+  const { title, project_id, tags } = req.body;
   const file = req.file;
 
   if (!file) {
@@ -349,7 +349,7 @@ router.post('/', authenticate, requireUploaderOrAdmin(), upload.single('video'),
 // PUT /videos/:id - Update video metadata (admin + uploader for own)
 router.put('/:id', authenticate, requireUploaderOrAdmin(), async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const { title, description, project_id, tags } = req.body;
+  const { title, project_id, tags } = req.body;
 
   try {
     const existing = await db.query('SELECT * FROM videos WHERE id = $1', [id]);

@@ -1,0 +1,178 @@
+# ──────────────────────────────────────────────────
+# Backend  –  Persistent Volume Claim  (video storage)
+# ──────────────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backend-pvc
+  namespace: oss-videotheque
+  labels:
+    app: oss-videotheque
+    component: backend
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi          # adjust based on your video archive size
+
+---
+# ──────────────────────────────────────────────────
+# Backend  –  Deployment
+# ──────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: oss-videotheque
+  labels:
+    app: oss-videotheque
+    component: backend
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate          # single writer to the storage volume
+  selector:
+    matchLabels:
+      app: oss-videotheque
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: oss-videotheque
+        component: backend
+    spec:
+      initContainers:
+        # Wait for DB to be ready before starting the backend
+        - name: wait-for-db
+          image: postgres:16-alpine
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h db -p 5432 -U postgres; do
+                echo "Waiting for database..."
+                sleep 2
+              done
+              echo "Database is ready!"
+      containers:
+        - name: backend
+          # ⚠️  Replace with your own image reference
+          # Build & push:  docker build -t oss-videotheque/backend:latest ./backend
+          image: oss-videotheque/backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4000
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: oss-videotheque-config
+                  key: PORT
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: oss-videotheque-config
+                  key: NODE_ENV
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: oss-videotheque-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: oss-videotheque-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: oss-videotheque-config
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: oss-videotheque-config
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oss-videotheque-secrets
+                  key: DB_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: oss-videotheque-secrets
+                  key: JWT_SECRET
+            - name: JWT_EXPIRES_IN
+              valueFrom:
+                configMapKeyRef:
+                  name: oss-videotheque-config
+                  key: JWT_EXPIRES_IN
+            - name: STORAGE_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: oss-videotheque-config
+                  key: STORAGE_PATH
+            - name: FFMPEG_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: oss-videotheque-config
+                  key: FFMPEG_PATH
+            - name: FFPROBE_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: oss-videotheque-config
+                  key: FFPROBE_PATH
+          volumeMounts:
+            - name: backend-storage
+              mountPath: /app/storage
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi
+      volumes:
+        - name: backend-storage
+          persistentVolumeClaim:
+            claimName: backend-pvc
+
+---
+# ──────────────────────────────────────────────────
+# Backend  –  Service
+# ──────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: oss-videotheque
+  labels:
+    app: oss-videotheque
+    component: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: oss-videotheque
+    component: backend
+  ports:
+    - port: 4000
+      targetPort: 4000
+      protocol: TCP

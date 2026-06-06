@@ -1,0 +1,76 @@
+# ──────────────────────────────────────────────────
+# Frontend  –  Deployment
+# ──────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: oss-videotheque
+  labels:
+    app: oss-videotheque
+    component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: oss-videotheque
+      component: frontend
+  template:
+    metadata:
+      labels:
+        app: oss-videotheque
+        component: frontend
+    spec:
+      containers:
+        - name: frontend
+          # ⚠️  Replace with your own image reference
+          # Build & push:  docker build -t oss-videotheque/frontend:latest ./frontend
+          image: oss-videotheque/frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+
+---
+# ──────────────────────────────────────────────────
+# Frontend  –  Service  (LoadBalancer)
+# ──────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: oss-videotheque
+  labels:
+    app: oss-videotheque
+    component: frontend
+spec:
+  type: LoadBalancer
+  selector:
+    app: oss-videotheque
+    component: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP

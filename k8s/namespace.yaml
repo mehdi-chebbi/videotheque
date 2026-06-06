@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: oss-videotheque
+  labels:
+    app: oss-videotheque
+    environment: production

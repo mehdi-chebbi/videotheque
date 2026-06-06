@@ -1,0 +1,117 @@
+# ──────────────────────────────────────────────────
+# PostgreSQL  –  Persistent Volume Claim
+# ──────────────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: db-pvc
+  namespace: oss-videotheque
+  labels:
+    app: oss-videotheque
+    component: db
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+# ──────────────────────────────────────────────────
+# PostgreSQL  –  Deployment
+# ──────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+  namespace: oss-videotheque
+  labels:
+    app: oss-videotheque
+    component: db
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate          # PostgreSQL must not run >1 replica
+  selector:
+    matchLabels:
+      app: oss-videotheque
+      component: db
+  template:
+    metadata:
+      labels:
+        app: oss-videotheque
+        component: db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: oss-videotheque-config
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: oss-videotheque-config
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oss-videotheque-secrets
+                  key: POSTGRES_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata   # avoids lost+found issue
+          volumeMounts:
+            - name: db-data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+      volumes:
+        - name: db-data
+          persistentVolumeClaim:
+            claimName: db-pvc
+
+---
+# ──────────────────────────────────────────────────
+# PostgreSQL  –  Service
+# ──────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  namespace: oss-videotheque
+  labels:
+    app: oss-videotheque
+    component: db
+spec:
+  type: ClusterIP
+  selector:
+    app: oss-videotheque
+    component: db
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP

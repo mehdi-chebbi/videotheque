@@ -49,7 +49,7 @@ router.get('/:id', authenticate, async (req: Request, res: Response): Promise<vo
 
 // POST /projects - Create a project (uploader or admin)
 router.post('/', authenticate, requireUploaderOrAdmin(), async (req: Request, res: Response): Promise<void> => {
-  const { name, description } = req.body;
+  const { name } = req.body;
 
   if (!name) {
     error(res, 'Le nom du projet est requis.', 400);
@@ -64,8 +64,8 @@ router.post('/', authenticate, requireUploaderOrAdmin(), async (req: Request, re
     }
 
     const result = await db.query(
-      'INSERT INTO projects (name, description, created_by) VALUES ($1, $2, $3) RETURNING *',
-      [name, description || null, req.user!.userId]
+      'INSERT INTO projects (name, created_by) VALUES ($1, $2) RETURNING *',
+      [name, req.user!.userId]
     );
 
     success(res, result.rows[0], 201);
@@ -78,7 +78,7 @@ router.post('/', authenticate, requireUploaderOrAdmin(), async (req: Request, re
 // PUT /projects/:id - Update a project (admin only)
 router.put('/:id', authenticate, requireAdmin(), async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const { name, description } = req.body;
+  const { name } = req.body;
 
   try {
     const existing = await db.query('SELECT id FROM projects WHERE id = $1', [id]);
@@ -102,11 +102,6 @@ router.put('/:id', authenticate, requireAdmin(), async (req: Request, res: Respo
     if (name) {
       updates.push(`name = $${paramIndex++}`);
       values.push(name);
-    }
-
-    if (description !== undefined) {
-      updates.push(`description = $${paramIndex++}`);
-      values.push(description);
     }
 
     if (updates.length === 0) {

@@ -40,9 +40,9 @@ export const usersApi = {
 export const projectsApi = {
   list: () => api.get<{ success: boolean; data: Project[] }>("/projects"),
   get: (id: string) => api.get<{ success: boolean; data: Project }>(`/projects/${id}`),
-  create: (data: { name: string; description?: string }) =>
+  create: (data: { name: string }) =>
     api.post<{ success: boolean; data: Project }>("/projects", data),
-  update: (id: string, data: { name?: string; description?: string }) =>
+  update: (id: string, data: { name?: string }) =>
     api.put<{ success: boolean; data: Project }>(`/projects/${id}`, data),
   delete: (id: string) => api.delete(`/projects/${id}`),
 };

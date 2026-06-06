@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Archive, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Camera, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuthStore } from "../stores/auth";
 import { authApi } from "../api";
 import { Button } from "../components/ui/button";
@@ -36,27 +36,37 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="h-14 w-14 rounded-xl bg-primary flex items-center justify-center">
-              <Archive className="h-8 w-8 text-primary-foreground" />
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      {/* Decorative background */}
+      <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-secondary/8 blur-3xl pointer-events-none" />
+      <div className="absolute top-[40%] right-[20%] w-[300px] h-[300px] rounded-full bg-primary/5 blur-2xl pointer-events-none" />
+
+      <Card className="w-full max-w-md relative z-10 shadow-2xl border-border/50 bg-card">
+        <CardHeader className="text-center pb-2">
+          <div className="flex justify-center mb-5">
+            <div className="h-18 w-18 rounded-2xl gradient-gold flex items-center justify-center shadow-xl glow-gold">
+              <Camera className="h-9 w-9 text-secondary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl">Vidéothèque</CardTitle>
-          <CardDescription>Connectez-vous pour accéder à la plateforme vidéothèque</CardDescription>
+          <CardTitle className="text-3xl font-bold">
+            <span className="text-secondary">OSS</span>{" "}
+            <span className="text-foreground">Vidéothèque</span>
+          </CardTitle>
+          <CardDescription className="text-muted-foreground mt-2 text-base">
+            Connectez-vous pour accéder à la plateforme
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="pt-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+              <div className="rounded-lg bg-destructive/15 border border-destructive/30 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="username">Nom d'utilisateur</Label>
+              <Label htmlFor="username" className="text-muted-foreground">Nom d'utilisateur</Label>
               <Input
                 id="username"
                 type="text"
@@ -65,11 +75,12 @@ export default function LoginPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 autoFocus
+                className="h-11 bg-muted border-border text-foreground placeholder:text-muted-foreground/60 focus:border-secondary focus:ring-secondary/30"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
+              <Label htmlFor="password" className="text-muted-foreground">Mot de passe</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -78,19 +89,24 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  className="h-11 pr-10 bg-muted border-border text-foreground placeholder:text-muted-foreground/60 focus:border-secondary focus:ring-secondary/30"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-secondary transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            <Button
+              type="submit"
+              className="w-full h-11 gradient-primary hover:opacity-90 text-white font-semibold shadow-lg hover:shadow-xl transition-all glow-primary"
+              disabled={loading}
+            >
+              {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               {loading ? "Connexion en cours..." : "Se connecter"}
             </Button>
           </form>

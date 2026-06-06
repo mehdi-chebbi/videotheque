@@ -18,14 +18,7 @@ export default function AllVideosPage() {
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
   const [showFilters, setShowFilters] = useState(false);
-
-  const [filters, setFilters] = useState<VideoFilters>({
-    page: 1,
-    limit: 20,
-    sort_by: "created_at",
-    sort_order: "desc",
-  });
-
+  const [filters, setFilters] = useState<VideoFilters>({ page: 1, limit: 20, sort_by: "created_at", sort_order: "desc" });
   const [searchInput, setSearchInput] = useState("");
 
   const loadVideos = useCallback(async () => {
@@ -41,149 +34,85 @@ export default function AllVideosPage() {
     }
   }, [filters]);
 
-  useEffect(() => {
-    loadVideos();
-  }, [loadVideos]);
+  useEffect(() => { loadVideos(); }, [loadVideos]);
 
   useEffect(() => {
     async function loadFilters() {
       try {
-        const [projectsRes, tagsRes, usersRes] = await Promise.all([
-          projectsApi.list(),
-          tagsApi.list(),
-          usersApi.list().catch(() => ({ data: { data: [] } })),
-        ]);
+        const [projectsRes, tagsRes, usersRes] = await Promise.all([projectsApi.list(), tagsApi.list(), usersApi.list().catch(() => ({ data: { data: [] } }))]);
         setProjects(projectsRes.data.data);
         setTags(tagsRes.data.data);
         setUsers(usersRes.data.data);
-      } catch (err) {
-        console.error("Load filters error:", err);
-      }
+      } catch (err) { console.error("Load filters error:", err); }
     }
     loadFilters();
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFilters({ ...filters, search: searchInput, page: 1 });
-  };
-
-  const clearFilters = () => {
-    setFilters({ page: 1, limit: 20, sort_by: "created_at", sort_order: "desc" });
-    setSearchInput("");
-  };
+  const handleSearch = (e: React.FormEvent) => { e.preventDefault(); setFilters({ ...filters, search: searchInput, page: 1 }); };
+  const clearFilters = () => { setFilters({ page: 1, limit: 20, sort_by: "created_at", sort_order: "desc" }); setSearchInput(""); };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Toutes les vidéos</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold text-foreground">Toutes les vidéos</h1>
+          <p className="text-muted-foreground mt-0.5">
             {pagination.total} vidéo{pagination.total !== 1 ? "s" : ""} téléversées par tout le monde
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
-          <SlidersHorizontal className="h-4 w-4 mr-2" />
-          Filtres
+        <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}
+          className="border-secondary/40 text-secondary hover:bg-secondary/10 hover:text-secondary">
+          <SlidersHorizontal className="h-4 w-4 mr-2" /> Filtres
         </Button>
       </div>
 
-      {/* Search Bar */}
       <form onSubmit={handleSearch} className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            placeholder="Rechercher des vidéos par titre..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-          />
+          <Input className="pl-9 h-10 bg-muted border-border text-foreground placeholder:text-muted-foreground/60 focus:border-secondary focus:ring-secondary/30"
+            placeholder="Rechercher des vidéos par titre..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
         </div>
-        <Button type="submit">Rechercher</Button>
+        <Button type="submit" className="gradient-primary hover:opacity-90 text-white shadow-md">Rechercher</Button>
       </form>
 
-      {/* Filters Panel */}
       {showFilters && (
-        <Card>
+        <Card className="border-border/50 bg-card">
           <CardContent className="p-4">
             <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-medium">Projet</label>
-                <Select
-                  value={filters.project_id || "all"}
-                  onValueChange={(v) =>
-                    setFilters({ ...filters, project_id: v === "all" ? undefined : v, page: 1 })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tous les projets" />
-                  </SelectTrigger>
+                <label className="text-xs font-medium text-secondary">Projet</label>
+                <Select value={filters.project_id || "all"} onValueChange={(v) => setFilters({ ...filters, project_id: v === "all" ? undefined : v, page: 1 })}>
+                  <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Tous les projets" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tous les projets</SelectItem>
-                    {projects.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
+                    {projects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-1">
-                <label className="text-xs font-medium">Étiquette</label>
-                <Select
-                  value={filters.tag || "all"}
-                  onValueChange={(v) =>
-                    setFilters({ ...filters, tag: v === "all" ? undefined : v, page: 1 })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Toutes les étiquettes" />
-                  </SelectTrigger>
+                <label className="text-xs font-medium text-secondary">Étiquette</label>
+                <Select value={filters.tag || "all"} onValueChange={(v) => setFilters({ ...filters, tag: v === "all" ? undefined : v, page: 1 })}>
+                  <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Toutes les étiquettes" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Toutes les étiquettes</SelectItem>
-                    {tags.map((t) => (
-                      <SelectItem key={t.id} value={t.name}>
-                        {t.name}
-                      </SelectItem>
-                    ))}
+                    {tags.map((t) => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-1">
-                <label className="text-xs font-medium">Téléverseur</label>
-                <Select
-                  value={filters.uploaded_by || "all"}
-                  onValueChange={(v) =>
-                    setFilters({ ...filters, uploaded_by: v === "all" ? undefined : v, page: 1 })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tous les utilisateurs" />
-                  </SelectTrigger>
+                <label className="text-xs font-medium text-secondary">Téléverseur</label>
+                <Select value={filters.uploaded_by || "all"} onValueChange={(v) => setFilters({ ...filters, uploaded_by: v === "all" ? undefined : v, page: 1 })}>
+                  <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Tous les utilisateurs" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tous les utilisateurs</SelectItem>
-                    {users.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.username}
-                      </SelectItem>
-                    ))}
+                    {users.map((u) => <SelectItem key={u.id} value={u.id}>{u.username}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-1">
-                <label className="text-xs font-medium">Trier par</label>
-                <Select
-                  value={filters.sort_by}
-                  onValueChange={(v) =>
-                    setFilters({ ...filters, sort_by: v as VideoFilters["sort_by"], page: 1 })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <label className="text-xs font-medium text-secondary">Trier par</label>
+                <Select value={filters.sort_by} onValueChange={(v) => setFilters({ ...filters, sort_by: v as VideoFilters["sort_by"], page: 1 })}>
+                  <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="created_at">Date</SelectItem>
                     <SelectItem value="title">Titre</SelectItem>
@@ -192,18 +121,10 @@ export default function AllVideosPage() {
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-1">
-                <label className="text-xs font-medium">Ordre</label>
-                <Select
-                  value={filters.sort_order}
-                  onValueChange={(v) =>
-                    setFilters({ ...filters, sort_order: v as "asc" | "desc", page: 1 })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <label className="text-xs font-medium text-secondary">Ordre</label>
+                <Select value={filters.sort_order} onValueChange={(v) => setFilters({ ...filters, sort_order: v as "asc" | "desc", page: 1 })}>
+                  <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="desc">Plus récents d'abord</SelectItem>
                     <SelectItem value="asc">Plus anciens d'abord</SelectItem>
@@ -212,28 +133,21 @@ export default function AllVideosPage() {
               </div>
             </div>
             <div className="flex justify-end mt-3">
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
-                Réinitialiser les filtres
-              </Button>
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground hover:text-secondary">Réinitialiser les filtres</Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Videos Grid */}
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
+        <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-secondary" /></div>
       ) : videos.length === 0 ? (
-        <Card>
+        <Card className="border-border/50 bg-card">
           <CardContent className="p-12 text-center">
-            <Video className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="font-semibold text-lg">Aucune vidéo trouvée</h3>
+            <Video className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
+            <h3 className="font-semibold text-lg text-foreground">Aucune vidéo trouvée</h3>
             <p className="text-muted-foreground mt-1">
-              {filters.search || filters.project_id || filters.tag
-                ? "Essayez d'ajuster votre recherche ou vos filtres."
-                : "Aucune vidéo n'a encore été téléversée."}
+              {filters.search || filters.project_id || filters.tag ? "Essayez d'ajuster votre recherche ou vos filtres." : "Aucune vidéo n'a encore été téléversée."}
             </p>
           </CardContent>
         </Card>
@@ -242,34 +156,25 @@ export default function AllVideosPage() {
           <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {videos.map((video) => (
               <Link key={video.id} to={`/videos/${video.id}`}>
-                <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="aspect-video bg-muted relative">
-                    <img
-                      src={`/api/videos/${video.id}/thumbnail`}
-                      alt={video.title}
-                      className="w-full h-full object-cover"
-                    />
+                <Card className="overflow-hidden transition-all duration-200 cursor-pointer bg-card border-border/50 card-hover">
+                  <div className="aspect-video bg-muted relative overflow-hidden">
+                    <img src={`/api/videos/${video.id}/thumbnail`} alt={video.title}
+                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
                     {video.duration && (
-                      <span className="absolute bottom-1 right-1 bg-black/75 text-white text-xs px-1.5 py-0.5 rounded">
+                      <span className="absolute bottom-1.5 right-1.5 bg-black/75 text-white text-xs px-1.5 py-0.5 rounded-md font-medium">
                         {formatDuration(video.duration)}
                       </span>
                     )}
                   </div>
                   <CardContent className="p-3">
-                    <h3 className="font-medium text-sm truncate">{video.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {video.uploaded_by_username} &middot; {formatBytes(video.file_size)}
-                    </p>
+                    <h3 className="font-medium text-sm truncate text-foreground">{video.title}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">{video.uploaded_by_username} &middot; {formatBytes(video.file_size)}</p>
                     <div className="flex gap-1 mt-2 flex-wrap">
                       {video.tags.slice(0, 3).map((tag) => (
-                        <Badge key={tag.id} variant="secondary" className="text-[10px] px-1.5 py-0">
-                          {tag.name}
-                        </Badge>
+                        <Badge key={tag.id} variant="secondary" className="text-[10px] px-1.5 py-0 bg-secondary/15 text-secondary border border-secondary/25">{tag.name}</Badge>
                       ))}
                       {video.tags.length > 3 && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                          +{video.tags.length - 3}
-                        </Badge>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/30 text-primary">+{video.tags.length - 3}</Badge>
                       )}
                     </div>
                   </CardContent>
@@ -278,28 +183,15 @@ export default function AllVideosPage() {
             ))}
           </div>
 
-          {/* Pagination */}
           {pagination.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={pagination.page <= 1}
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <Button variant="outline" size="sm" disabled={pagination.page <= 1}
                 onClick={() => setFilters({ ...filters, page: pagination.page - 1 })}
-              >
-                Précédent
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                Page {pagination.page} sur {pagination.totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={pagination.page >= pagination.totalPages}
+                className="border-border text-muted-foreground hover:text-secondary hover:border-secondary/40">Précédent</Button>
+              <span className="text-sm text-muted-foreground">Page {pagination.page} sur {pagination.totalPages}</span>
+              <Button variant="outline" size="sm" disabled={pagination.page >= pagination.totalPages}
                 onClick={() => setFilters({ ...filters, page: pagination.page + 1 })}
-              >
-                Suivant
-              </Button>
+                className="border-border text-muted-foreground hover:text-secondary hover:border-secondary/40">Suivant</Button>
             </div>
           )}
         </>
