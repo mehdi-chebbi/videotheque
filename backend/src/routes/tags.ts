@@ -18,7 +18,7 @@ router.get('/', authenticate, async (_req: Request, res: Response): Promise<void
     success(res, result.rows);
   } catch (err) {
     console.error('[TAGS] List error:', err);
-    error(res, 'Internal server error.', 500);
+    error(res, 'Erreur interne du serveur.', 500);
   }
 });
 
@@ -27,7 +27,7 @@ router.post('/', authenticate, requireUploaderOrAdmin(), async (req: Request, re
   const { name } = req.body;
 
   if (!name) {
-    error(res, 'Tag name is required.', 400);
+    error(res, 'Le nom du tag est requis.', 400);
     return;
   }
 
@@ -41,11 +41,11 @@ router.post('/', authenticate, requireUploaderOrAdmin(), async (req: Request, re
   } catch (err: unknown) {
     const pgErr = err as { code?: string };
     if (pgErr.code === '23505') {
-      error(res, 'Tag already exists.', 409);
+      error(res, 'Ce tag existe déjà.', 409);
       return;
     }
     console.error('[TAGS] Create error:', err);
-    error(res, 'Internal server error.', 500);
+    error(res, 'Erreur interne du serveur.', 500);
   }
 });
 
@@ -57,7 +57,7 @@ router.delete('/:id', authenticate, async (req: Request, res: Response): Promise
     const existing = await db.query('SELECT created_by FROM tags WHERE id = $1', [id]);
 
     if (existing.rows.length === 0) {
-      error(res, 'Tag not found.', 404);
+      error(res, 'Tag introuvable.', 404);
       return;
     }
 
@@ -65,15 +65,15 @@ router.delete('/:id', authenticate, async (req: Request, res: Response): Promise
     const isOwner = existing.rows[0].created_by === req.user!.userId;
     const isAdmin = req.user!.role === 'admin';
     if (!isOwner && !isAdmin) {
-      error(res, 'You can only delete tags you created.', 403);
+      error(res, 'Vous ne pouvez supprimer que les tags que vous avez créés.', 403);
       return;
     }
 
     await db.query('DELETE FROM tags WHERE id = $1', [id]);
-    success(res, { message: 'Tag deleted successfully.' });
+    success(res, { message: 'Tag supprimé avec succès.' });
   } catch (err) {
     console.error('[TAGS] Delete error:', err);
-    error(res, 'Internal server error.', 500);
+    error(res, 'Erreur interne du serveur.', 500);
   }
 });
 

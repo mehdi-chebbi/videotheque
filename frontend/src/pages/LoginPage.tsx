@@ -29,7 +29,7 @@ export default function LoginPage() {
       navigate("/");
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } };
-      setError(axiosErr.response?.data?.error || "Login failed. Please try again.");
+      setError(axiosErr.response?.data?.error || "Échec de la connexion. Veuillez réessayer.");
     } finally {
       setLoading(false);
     }
@@ -44,8 +44,8 @@ export default function LoginPage() {
               <Archive className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl">Video Archive</CardTitle>
-          <CardDescription>Sign in to access the video archive platform</CardDescription>
+          <CardTitle className="text-2xl">Vidéothèque</CardTitle>
+          <CardDescription>Connectez-vous pour accéder à la plateforme vidéothèque</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -56,11 +56,11 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">Nom d'utilisateur</Label>
               <Input
                 id="username"
                 type="text"
-                placeholder="Enter your username"
+                placeholder="Entrez votre nom d'utilisateur"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -69,12 +69,12 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Mot de passe</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
+                  placeholder="Entrez votre mot de passe"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -91,7 +91,7 @@ export default function LoginPage() {
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? "Connexion en cours..." : "Se connecter"}
             </Button>
           </form>
         </CardContent>

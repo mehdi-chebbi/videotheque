@@ -15,7 +15,7 @@ router.get('/', authenticate, requireAdmin(), async (_req: Request, res: Respons
     success(res, result.rows);
   } catch (err) {
     console.error('[USERS] List error:', err);
-    error(res, 'Internal server error.', 500);
+    error(res, 'Erreur interne du serveur.', 500);
   }
 });
 
@@ -24,24 +24,24 @@ router.post('/', authenticate, requireAdmin(), async (req: Request, res: Respons
   const { username, password, role } = req.body;
 
   if (!username || !password || !role) {
-    error(res, 'Username, password, and role are required.', 400);
+    error(res, 'Nom d\'utilisateur, mot de passe et rôle requis.', 400);
     return;
   }
 
   if (!['admin', 'uploader'].includes(role)) {
-    error(res, 'Role must be either "admin" or "uploader".', 400);
+    error(res, 'Le rôle doit être \'admin\' ou \'uploader\'.', 400);
     return;
   }
 
   if (password.length < 6) {
-    error(res, 'Password must be at least 6 characters.', 400);
+    error(res, 'Le mot de passe doit contenir au moins 6 caractères.', 400);
     return;
   }
 
   try {
     const existing = await db.query('SELECT id FROM users WHERE username = $1', [username]);
     if (existing.rows.length > 0) {
-      error(res, 'Username already exists.', 409);
+      error(res, 'Ce nom d\'utilisateur existe déjà.', 409);
       return;
     }
 
@@ -56,7 +56,7 @@ router.post('/', authenticate, requireAdmin(), async (req: Request, res: Respons
     success(res, result.rows[0], 201);
   } catch (err) {
     console.error('[USERS] Create error:', err);
-    error(res, 'Internal server error.', 500);
+    error(res, 'Erreur interne du serveur.', 500);
   }
 });
 
@@ -68,7 +68,7 @@ router.put('/:id', authenticate, requireAdmin(), async (req: Request, res: Respo
   try {
     const existing = await db.query('SELECT id FROM users WHERE id = $1', [id]);
     if (existing.rows.length === 0) {
-      error(res, 'User not found.', 404);
+      error(res, 'Utilisateur introuvable.', 404);
       return;
     }
 
@@ -79,7 +79,7 @@ router.put('/:id', authenticate, requireAdmin(), async (req: Request, res: Respo
     if (username) {
       const duplicate = await db.query('SELECT id FROM users WHERE username = $1 AND id != $2', [username, id]);
       if (duplicate.rows.length > 0) {
-        error(res, 'Username already taken.', 409);
+        error(res, 'Ce nom d\'utilisateur est déjà pris.', 409);
         return;
       }
       updates.push(`username = $${paramIndex++}`);
@@ -88,7 +88,7 @@ router.put('/:id', authenticate, requireAdmin(), async (req: Request, res: Respo
 
     if (password) {
       if (password.length < 6) {
-        error(res, 'Password must be at least 6 characters.', 400);
+        error(res, 'Le mot de passe doit contenir au moins 6 caractères.', 400);
         return;
       }
       const salt = await bcrypt.genSalt(10);
@@ -99,7 +99,7 @@ router.put('/:id', authenticate, requireAdmin(), async (req: Request, res: Respo
 
     if (role) {
       if (!['admin', 'uploader'].includes(role)) {
-        error(res, 'Role must be either "admin" or "uploader".', 400);
+        error(res, 'Le rôle doit être \'admin\' ou \'uploader\'.', 400);
         return;
       }
       updates.push(`role = $${paramIndex++}`);
@@ -107,7 +107,7 @@ router.put('/:id', authenticate, requireAdmin(), async (req: Request, res: Respo
     }
 
     if (updates.length === 0) {
-      error(res, 'No fields to update.', 400);
+      error(res, 'Aucun champ à mettre à jour.', 400);
       return;
     }
 
@@ -120,7 +120,7 @@ router.put('/:id', authenticate, requireAdmin(), async (req: Request, res: Respo
     success(res, result.rows[0]);
   } catch (err) {
     console.error('[USERS] Update error:', err);
-    error(res, 'Internal server error.', 500);
+    error(res, 'Erreur interne du serveur.', 500);
   }
 });
 
@@ -131,21 +131,21 @@ router.delete('/:id', authenticate, requireAdmin(), async (req: Request, res: Re
   try {
     // Prevent deleting yourself
     if (id === req.user!.userId) {
-      error(res, 'You cannot delete your own account.', 400);
+      error(res, 'Vous ne pouvez pas supprimer votre propre compte.', 400);
       return;
     }
 
     const result = await db.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
 
     if (result.rows.length === 0) {
-      error(res, 'User not found.', 404);
+      error(res, 'Utilisateur introuvable.', 404);
       return;
     }
 
-    success(res, { message: 'User deleted successfully.' });
+    success(res, { message: 'Utilisateur supprimé avec succès.' });
   } catch (err) {
     console.error('[USERS] Delete error:', err);
-    error(res, 'Internal server error.', 500);
+    error(res, 'Erreur interne du serveur.', 500);
   }
 });
 

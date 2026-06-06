@@ -42,8 +42,8 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
     }
 
     if (search) {
-      whereConditions.push(`(v.title ILIKE $${paramIndex++} OR v.description ILIKE $${paramIndex++})`);
-      params.push(`%${search}%`, `%${search}%`);
+      whereConditions.push(`v.title ILIKE $${paramIndex++}`);
+      params.push(`%${search}%`);
     }
 
     if (tag) {
@@ -76,7 +76,7 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
     const result = await db.query(
       `SELECT v.*, p.name as project_name, u.username as uploaded_by_username
        FROM videos v
-       JOIN projects p ON v.project_id = p.id
+       LEFT JOIN projects p ON v.project_id = p.id
        JOIN users u ON v.uploaded_by = u.id
        ${tagJoin}
        ${whereClause}
@@ -111,7 +111,7 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
     paginated(res, videosWithTag, total, pageNum, limitNum);
   } catch (err) {
     console.error('[VIDEOS] List error:', err);
-    error(res, 'Internal server error.', 500);
+    error(res, 'Erreur interne du serveur.', 500);
   }
 });
 
@@ -123,13 +123,13 @@ router.get('/:id', authenticate, async (req: Request, res: Response): Promise<vo
     const result = await db.query(`
       SELECT v.*, p.name as project_name, u.username as uploaded_by_username
       FROM videos v
-      JOIN projects p ON v.project_id = p.id
+      LEFT JOIN projects p ON v.project_id = p.id
       JOIN users u ON v.uploaded_by = u.id
       WHERE v.id = $1
     `, [id]);
 
     if (result.rows.length === 0) {
-      error(res, 'Video not found.', 404);
+      error(res, 'Vidéo introuvable.', 404);
       return;
     }
 
@@ -149,7 +149,7 @@ router.get('/:id', authenticate, async (req: Request, res: Response): Promise<vo
     success(res, video);
   } catch (err) {
     console.error('[VIDEOS] Get error:', err);
-    error(res, 'Internal server error.', 500);
+    error(res, 'Erreur interne du serveur.', 500);
   }
 });
 
@@ -161,14 +161,14 @@ router.get('/:id/stream', async (req: Request, res: Response): Promise<void> => 
     const result = await db.query('SELECT file_path FROM videos WHERE id = $1', [id]);
 
     if (result.rows.length === 0) {
-      error(res, 'Video not found.', 404);
+      error(res, 'Vidéo introuvable.', 404);
       return;
     }
 
     const filePath = result.rows[0].file_path;
 
     if (!fs.existsSync(filePath)) {
-      error(res, 'Video file not found on disk.', 404);
+      error(res, 'Fichier vidéo introuvable sur le disque.', 404);
       return;
     }
 
@@ -214,7 +214,7 @@ router.get('/:id/stream', async (req: Request, res: Response): Promise<void> => 
     }
   } catch (err) {
     console.error('[VIDEOS] Stream error:', err);
-    error(res, 'Internal server error.', 500);
+    error(res, 'Erreur interne du serveur.', 500);
   }
 });
 
@@ -226,21 +226,21 @@ router.get('/:id/thumbnail', async (req: Request, res: Response): Promise<void> 
     const result = await db.query('SELECT thumbnail_path FROM videos WHERE id = $1', [id]);
 
     if (result.rows.length === 0) {
-      error(res, 'Video not found.', 404);
+      error(res, 'Vidéo introuvable.', 404);
       return;
     }
 
     const thumbnailPath = result.rows[0].thumbnail_path;
 
     if (!thumbnailPath || !fs.existsSync(thumbnailPath)) {
-      error(res, 'Thumbnail not found.', 404);
+      error(res, 'Miniature introuvable.', 404);
       return;
     }
 
     res.sendFile(thumbnailPath);
   } catch (err) {
     console.error('[VIDEOS] Thumbnail error:', err);
-    error(res, 'Internal server error.', 500);
+    error(res, 'Erreur interne du serveur.', 500);
   }
 });
 
@@ -250,24 +250,26 @@ router.post('/', authenticate, requireUploaderOrAdmin(), upload.single('video'),
   const file = req.file;
 
   if (!file) {
-    error(res, 'No video file provided.', 400);
+    error(res, 'Aucun fichier vidéo fourni.', 400);
     return;
   }
 
-  if (!title || !project_id) {
+  if (!title) {
     // Clean up temp file
     if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
-    error(res, 'Title and project_id are required.', 400);
+    error(res, 'Le titre est requis.', 400);
     return;
   }
 
   try {
-    // Verify project exists
-    const projectResult = await db.query('SELECT id, name FROM projects WHERE id = $1', [project_id]);
-    if (projectResult.rows.length === 0) {
-      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
-      error(res, 'Project not found.', 404);
-      return;
+    // Verify project exists if provided
+    if (project_id) {
+      const projectResult = await db.query('SELECT id, name FROM projects WHERE id = $1', [project_id]);
+      if (projectResult.rows.length === 0) {
+        if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        error(res, 'Projet introuvable.', 404);
+        return;
+      }
     }
 
     // Generate video ID and paths
@@ -300,14 +302,13 @@ router.post('/', authenticate, requireUploaderOrAdmin(), upload.single('video'),
 
     // Insert video into database
     const result = await db.query(
-      `INSERT INTO videos (id, title, description, project_id, file_path, thumbnail_path, file_size, duration, format, uploaded_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO videos (id, title, project_id, file_path, thumbnail_path, file_size, duration, format, uploaded_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
         videoId,
         title,
-        description || null,
-        project_id,
+        project_id || null,
         videoPath,
         metadata.thumbnailPath || null,
         fileSize,
@@ -341,7 +342,7 @@ router.post('/', authenticate, requireUploaderOrAdmin(), upload.single('video'),
     }, 201);
   } catch (err) {
     console.error('[VIDEOS] Upload error:', err);
-    error(res, 'Internal server error.', 500);
+    error(res, 'Erreur interne du serveur.', 500);
   }
 });
 
@@ -353,13 +354,13 @@ router.put('/:id', authenticate, requireUploaderOrAdmin(), async (req: Request, 
   try {
     const existing = await db.query('SELECT * FROM videos WHERE id = $1', [id]);
     if (existing.rows.length === 0) {
-      error(res, 'Video not found.', 404);
+      error(res, 'Vidéo introuvable.', 404);
       return;
     }
 
     // Uploader can only edit their own videos
     if (req.user!.role === 'uploader' && existing.rows[0].uploaded_by !== req.user!.userId) {
-      error(res, 'You can only edit your own videos.', 403);
+      error(res, 'Vous ne pouvez modifier que vos propres vidéos.', 403);
       return;
     }
 
@@ -372,15 +373,10 @@ router.put('/:id', authenticate, requireUploaderOrAdmin(), async (req: Request, 
       values.push(title);
     }
 
-    if (description !== undefined) {
-      updates.push(`description = $${paramIndex++}`);
-      values.push(description);
-    }
-
-    if (project_id) {
+    if (project_id !== undefined) {
       const projectExists = await db.query('SELECT id FROM projects WHERE id = $1', [project_id]);
       if (projectExists.rows.length === 0) {
-        error(res, 'Project not found.', 404);
+        error(res, 'Projet introuvable.', 404);
         return;
       }
       updates.push(`project_id = $${paramIndex++}`);
@@ -425,7 +421,7 @@ router.put('/:id', authenticate, requireUploaderOrAdmin(), async (req: Request, 
     const result = await db.query(`
       SELECT v.*, p.name as project_name, u.username as uploaded_by_username
       FROM videos v
-      JOIN projects p ON v.project_id = p.id
+      LEFT JOIN projects p ON v.project_id = p.id
       JOIN users u ON v.uploaded_by = u.id
       WHERE v.id = $1
     `, [id]);
@@ -443,7 +439,7 @@ router.put('/:id', authenticate, requireUploaderOrAdmin(), async (req: Request, 
     });
   } catch (err) {
     console.error('[VIDEOS] Update error:', err);
-    error(res, 'Internal server error.', 500);
+    error(res, 'Erreur interne du serveur.', 500);
   }
 });
 
@@ -454,13 +450,13 @@ router.delete('/:id', authenticate, requireUploaderOrAdmin(), async (req: Reques
   try {
     const existing = await db.query('SELECT * FROM videos WHERE id = $1', [id]);
     if (existing.rows.length === 0) {
-      error(res, 'Video not found.', 404);
+      error(res, 'Vidéo introuvable.', 404);
       return;
     }
 
     // Uploader can only delete their own videos
     if (req.user!.role === 'uploader' && existing.rows[0].uploaded_by !== req.user!.userId) {
-      error(res, 'You can only delete your own videos.', 403);
+      error(res, 'Vous ne pouvez supprimer que vos propres vidéos.', 403);
       return;
     }
 
@@ -476,10 +472,10 @@ router.delete('/:id', authenticate, requireUploaderOrAdmin(), async (req: Reques
     // Delete from database (cascade will handle video_tags)
     await db.query('DELETE FROM videos WHERE id = $1', [id]);
 
-    success(res, { message: 'Video deleted successfully.' });
+    success(res, { message: 'Vidéo supprimée avec succès.' });
   } catch (err) {
     console.error('[VIDEOS] Delete error:', err);
-    error(res, 'Internal server error.', 500);
+    error(res, 'Erreur interne du serveur.', 500);
   }
 });
 
@@ -488,7 +484,7 @@ router.post('/batch-delete', authenticate, requireUploaderOrAdmin(), async (req:
   const { ids } = req.body;
 
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
-    error(res, 'ids array is required.', 400);
+    error(res, 'Le tableau d\'identifiants est requis.', 400);
     return;
   }
 
@@ -498,7 +494,7 @@ router.post('/batch-delete', authenticate, requireUploaderOrAdmin(), async (req:
     // Check ownership for each video
     for (const video of videos.rows) {
       if (req.user!.role === 'uploader' && video.uploaded_by !== req.user!.userId) {
-        error(res, 'You can only delete your own videos.', 403);
+        error(res, 'Vous ne pouvez supprimer que vos propres vidéos.', 403);
         return;
       }
     }
@@ -515,10 +511,10 @@ router.post('/batch-delete', authenticate, requireUploaderOrAdmin(), async (req:
     // Delete from database
     await db.query('DELETE FROM videos WHERE id = ANY($1)', [ids]);
 
-    success(res, { message: `${videos.rows.length} video(s) deleted successfully.` });
+    success(res, { message: `${videos.rows.length} vidéo(s) supprimée(s) avec succès.` });
   } catch (err) {
     console.error('[VIDEOS] Batch delete error:', err);
-    error(res, 'Internal server error.', 500);
+    error(res, 'Erreur interne du serveur.', 500);
   }
 });
 

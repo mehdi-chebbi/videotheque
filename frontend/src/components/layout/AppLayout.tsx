@@ -8,6 +8,7 @@ import {
   Menu,
   X,
   Archive,
+  KeyRound,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/auth";
 import { Button } from "../ui/button";
@@ -15,10 +16,11 @@ import { Separator } from "../ui/separator";
 import { cn } from "../../lib/utils";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "All Videos", href: "/videos", icon: Archive },
-  { name: "Upload", href: "/upload", icon: Upload, requireUpload: true },
-  { name: "Users", href: "/users", icon: Users, requireAdmin: true },
+  { name: "Tableau de bord", href: "/", icon: LayoutDashboard },
+  { name: "Toutes les vidéos", href: "/videos", icon: Archive },
+  { name: "Téléverser", href: "/upload", icon: Upload, requireUpload: true },
+  { name: "Utilisateurs", href: "/users", icon: Users, requireAdmin: true },
+  { name: "Changer le mot de passe", href: "/change-password", icon: KeyRound },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -54,7 +56,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
           <Link to="/" className="flex items-center gap-2 font-bold text-lg">
             <Archive className="h-6 w-6" />
-            <span className="hidden sm:inline">Video Archive</span>
+            <span className="hidden sm:inline">Vidéothèque</span>
           </Link>
 
           <div className="flex-1" />
@@ -64,7 +66,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               {user?.username}
             </span>
             <Badge role={user?.role} />
-            <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
+            <Button variant="ghost" size="icon" onClick={handleLogout} title="Déconnexion">
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
@@ -128,7 +130,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Footer */}
       <footer className="border-t py-3 px-4 text-center text-xs text-muted-foreground mt-auto">
-        Video Archive Platform &copy; {new Date().getFullYear()}
+        Plateforme Vidéothèque &copy; {new Date().getFullYear()}
       </footer>
     </div>
   );

@@ -77,14 +77,14 @@ export default function AllVideosPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">All Videos</h1>
+          <h1 className="text-2xl font-bold">Toutes les vidéos</h1>
           <p className="text-muted-foreground">
-            {pagination.total} video{pagination.total !== 1 ? "s" : ""} uploaded by everyone
+            {pagination.total} vidéo{pagination.total !== 1 ? "s" : ""} téléversées par tout le monde
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
           <SlidersHorizontal className="h-4 w-4 mr-2" />
-          Filters
+          Filtres
         </Button>
       </div>
 
@@ -94,12 +94,12 @@ export default function AllVideosPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             className="pl-9"
-            placeholder="Search videos by title or description..."
+            placeholder="Rechercher des vidéos par titre..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
-        <Button type="submit">Search</Button>
+        <Button type="submit">Rechercher</Button>
       </form>
 
       {/* Filters Panel */}
@@ -108,7 +108,7 @@ export default function AllVideosPage() {
           <CardContent className="p-4">
             <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-medium">Project</label>
+                <label className="text-xs font-medium">Projet</label>
                 <Select
                   value={filters.project_id || "all"}
                   onValueChange={(v) =>
@@ -116,10 +116,10 @@ export default function AllVideosPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="All projects" />
+                    <SelectValue placeholder="Tous les projets" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All projects</SelectItem>
+                    <SelectItem value="all">Tous les projets</SelectItem>
                     {projects.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.name}
@@ -130,7 +130,7 @@ export default function AllVideosPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-medium">Tag</label>
+                <label className="text-xs font-medium">Étiquette</label>
                 <Select
                   value={filters.tag || "all"}
                   onValueChange={(v) =>
@@ -138,10 +138,10 @@ export default function AllVideosPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="All tags" />
+                    <SelectValue placeholder="Toutes les étiquettes" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All tags</SelectItem>
+                    <SelectItem value="all">Toutes les étiquettes</SelectItem>
                     {tags.map((t) => (
                       <SelectItem key={t.id} value={t.name}>
                         {t.name}
@@ -152,7 +152,7 @@ export default function AllVideosPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-medium">Uploader</label>
+                <label className="text-xs font-medium">Téléverseur</label>
                 <Select
                   value={filters.uploaded_by || "all"}
                   onValueChange={(v) =>
@@ -160,10 +160,10 @@ export default function AllVideosPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="All users" />
+                    <SelectValue placeholder="Tous les utilisateurs" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All users</SelectItem>
+                    <SelectItem value="all">Tous les utilisateurs</SelectItem>
                     {users.map((u) => (
                       <SelectItem key={u.id} value={u.id}>
                         {u.username}
@@ -174,7 +174,7 @@ export default function AllVideosPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-medium">Sort By</label>
+                <label className="text-xs font-medium">Trier par</label>
                 <Select
                   value={filters.sort_by}
                   onValueChange={(v) =>
@@ -186,15 +186,15 @@ export default function AllVideosPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="created_at">Date</SelectItem>
-                    <SelectItem value="title">Title</SelectItem>
-                    <SelectItem value="file_size">Size</SelectItem>
-                    <SelectItem value="duration">Duration</SelectItem>
+                    <SelectItem value="title">Titre</SelectItem>
+                    <SelectItem value="file_size">Taille du fichier</SelectItem>
+                    <SelectItem value="duration">Durée</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-medium">Order</label>
+                <label className="text-xs font-medium">Ordre</label>
                 <Select
                   value={filters.sort_order}
                   onValueChange={(v) =>
@@ -205,15 +205,15 @@ export default function AllVideosPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="desc">Newest first</SelectItem>
-                    <SelectItem value="asc">Oldest first</SelectItem>
+                    <SelectItem value="desc">Plus récents d'abord</SelectItem>
+                    <SelectItem value="asc">Plus anciens d'abord</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="flex justify-end mt-3">
               <Button variant="ghost" size="sm" onClick={clearFilters}>
-                Clear filters
+                Réinitialiser les filtres
               </Button>
             </div>
           </CardContent>
@@ -229,11 +229,11 @@ export default function AllVideosPage() {
         <Card>
           <CardContent className="p-12 text-center">
             <Video className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="font-semibold text-lg">No videos found</h3>
+            <h3 className="font-semibold text-lg">Aucune vidéo trouvée</h3>
             <p className="text-muted-foreground mt-1">
               {filters.search || filters.project_id || filters.tag
-                ? "Try adjusting your search or filters."
-                : "No videos have been uploaded yet."}
+                ? "Essayez d'ajuster votre recherche ou vos filtres."
+                : "Aucune vidéo n'a encore été téléversée."}
             </p>
           </CardContent>
         </Card>
@@ -287,10 +287,10 @@ export default function AllVideosPage() {
                 disabled={pagination.page <= 1}
                 onClick={() => setFilters({ ...filters, page: pagination.page - 1 })}
               >
-                Previous
+                Précédent
               </Button>
               <span className="text-sm text-muted-foreground">
-                Page {pagination.page} of {pagination.totalPages}
+                Page {pagination.page} sur {pagination.totalPages}
               </span>
               <Button
                 variant="outline"
@@ -298,7 +298,7 @@ export default function AllVideosPage() {
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => setFilters({ ...filters, page: pagination.page + 1 })}
               >
-                Next
+                Suivant
               </Button>
             </div>
           )}

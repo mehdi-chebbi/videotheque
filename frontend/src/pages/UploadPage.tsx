@@ -6,7 +6,7 @@ import { useAuthStore } from "../stores/auth";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Textarea } from "../components/ui/textarea";
+
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
@@ -16,7 +16,6 @@ interface UploadItem {
   id: string;
   file: File;
   title: string;
-  description: string;
   project_id: string;
   tags: string[];
   status: "pending" | "uploading" | "done" | "error";
@@ -70,7 +69,6 @@ export default function UploadPage() {
         id: generateId(),
         file: f,
         title: f.name.replace(/\.[^/.]+$/, ""),
-        description: "",
         project_id: "",
         tags: [],
         status: "pending" as const,
@@ -149,7 +147,7 @@ export default function UploadPage() {
   };
 
   const handleDeleteTag = async (id: string, name: string) => {
-    if (!confirm(`Delete tag "${name}"?`)) return;
+    if (!confirm(`Supprimer l'étiquette "${name}" ?`)) return;
     try {
       await tagsApi.delete(id);
       setExistingTags((prev) => prev.filter((t) => t.id !== id));
@@ -160,7 +158,7 @@ export default function UploadPage() {
   };
 
   const handleDeleteProject = async (id: string, name: string) => {
-    if (!confirm(`Delete project "${name}" and all its videos?`)) return;
+    if (!confirm(`Supprimer le projet "${name}" et toutes ses vidéos ?`)) return;
     try {
       await projectsApi.delete(id);
       setProjects((prev) => prev.filter((p) => p.id !== id));
@@ -192,8 +190,7 @@ export default function UploadPage() {
       const formData = new FormData();
       formData.append("video", item.file);
       formData.append("title", item.title);
-      formData.append("project_id", projectId);
-      if (item.description) formData.append("description", item.description);
+      formData.append("project_id", projectId || "");
       formData.append("tags", JSON.stringify(tagNames));
 
       try {
@@ -201,7 +198,7 @@ export default function UploadPage() {
         updateItem(item.id, { status: "done" });
       } catch (err: unknown) {
         const axiosErr = err as { response?: { data?: { error?: string } } };
-        updateItem(item.id, { status: "error", error: axiosErr.response?.data?.error || "Upload failed" });
+        updateItem(item.id, { status: "error", error: axiosErr.response?.data?.error || "Échec du téléversement" });
       }
       completed++;
       setUploadCount(completed);
@@ -213,7 +210,7 @@ export default function UploadPage() {
   const doneCount = items.filter((i) => i.status === "done").length;
   const errorCount = items.filter((i) => i.status === "error").length;
   const allDone = items.length > 0 && items.every((i) => i.status === "done" || i.status === "error");
-  const canUpload = pendingCount > 0 && bulkProjectId && !uploading;
+  const canUpload = pendingCount > 0 && !uploading;
 
   const selectedBulkTags = existingTags.filter((t) => bulkTagIds.includes(t.id));
   const canDeleteTag = (tag: Tag) => tag.created_by === user?.id || user?.role === "admin";
@@ -224,8 +221,8 @@ export default function UploadPage() {
       {/* Left: Drop zone + Video list */}
       <div className="flex-1 space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">Upload Videos</h1>
-          <p className="text-muted-foreground">Add multiple videos at once</p>
+          <h1 className="text-2xl font-bold">Téléverser des vidéos</h1>
+          <p className="text-muted-foreground">Ajoutez plusieurs vidéos à la fois</p>
         </div>
 
         {/* Drop Zone */}
@@ -241,8 +238,8 @@ export default function UploadPage() {
         >
           <input ref={fileInputRef} type="file" accept="video/*" multiple onChange={handleFileSelect} className="hidden" />
           <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-          <p className="font-medium">Drop your videos here or click to browse</p>
-          <p className="text-sm text-muted-foreground mt-1">Select multiple video files at once</p>
+          <p className="font-medium">Déposez vos vidéos ici ou cliquez pour parcourir</p>
+          <p className="text-sm text-muted-foreground mt-1">Sélectionnez plusieurs fichiers vidéo à la fois</p>
         </div>
 
         {/* Video List */}
@@ -250,11 +247,11 @@ export default function UploadPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold">
-                {items.length} video{items.length !== 1 ? "s" : ""}
-                {uploading && ` — ${uploadCount}/${items.length} uploaded`}
+                {items.length} vidéo{items.length !== 1 ? "s" : ""}
+                {uploading && ` — ${uploadCount}/${items.length} téléversé(s)`}
               </h2>
               {!uploading && items.some((i) => i.status === "pending") && (
-                <Button variant="ghost" size="sm" onClick={() => setItems([])}>Clear all</Button>
+                <Button variant="ghost" size="sm" onClick={() => setItems([])}>Tout effacer</Button>
               )}
             </div>
 
@@ -285,7 +282,7 @@ export default function UploadPage() {
                         />
                         <p className="text-xs text-muted-foreground mt-1">
                           {(item.file.size / (1024 * 1024)).toFixed(1)} MB
-                          {effectiveProject && ` · ${projects.find((p) => p.id === effectiveProject)?.name || "Project"}`}
+                          {effectiveProject && ` · ${projects.find((p) => p.id === effectiveProject)?.name || "Projet"}`}
                           {effectiveTagNames.length > 0 && ` · ${effectiveTagNames.join(", ")}`}
                         </p>
                         {item.status === "error" && item.error && (
@@ -307,17 +304,13 @@ export default function UploadPage() {
                     {isExpanded && item.status === "pending" && (
                       <div className="mt-4 pt-4 border-t space-y-3">
                         <div className="space-y-2">
-                          <Label className="text-xs">Description</Label>
-                          <Textarea value={item.description} onChange={(e) => updateItem(item.id, { description: e.target.value })} placeholder="Optional" rows={2} />
-                        </div>
-                        <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <input type="checkbox" checked={item.overrideProject} onChange={(e) => updateItem(item.id, { overrideProject: e.target.checked, project_id: "" })} className="rounded" />
-                            <Label className="text-xs">Override project</Label>
+                            <Label className="text-xs">Remplacer le projet</Label>
                           </div>
                           {item.overrideProject && (
                             <Select value={item.project_id} onValueChange={(v) => updateItem(item.id, { project_id: v })}>
-                              <SelectTrigger><SelectValue placeholder="Select project" /></SelectTrigger>
+                              <SelectTrigger><SelectValue placeholder="Sélectionner un projet" /></SelectTrigger>
                               <SelectContent>
                                 {projects.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}
                               </SelectContent>
@@ -327,7 +320,7 @@ export default function UploadPage() {
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <input type="checkbox" checked={item.overrideTags} onChange={(e) => updateItem(item.id, { overrideTags: e.target.checked, tags: [] })} className="rounded" />
-                            <Label className="text-xs">Override tags</Label>
+                            <Label className="text-xs">Remplacer les étiquettes</Label>
                           </div>
                           {item.overrideTags && (
                             <div className="flex flex-wrap gap-1.5">
@@ -361,17 +354,17 @@ export default function UploadPage() {
               {!allDone ? (
                 <Button className="flex-1" disabled={!canUpload} onClick={handleUploadAll}>
                   {uploading ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />Uploading {uploadCount}/{items.length}...</>
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />Téléversement {uploadCount}/{items.length}...</>
                   ) : (
-                    <><Upload className="h-4 w-4 mr-2" />Upload {pendingCount} Video{pendingCount !== 1 ? "s" : ""}</>
+                    <><Upload className="h-4 w-4 mr-2" />Téléverser {pendingCount} vidéo{pendingCount !== 1 ? "s" : ""}</>
                   )}
                 </Button>
               ) : (
                 <div className="flex-1 flex items-center gap-3">
                   <p className="text-sm text-green-600 font-medium">
-                    {doneCount} uploaded!{errorCount > 0 && ` (${errorCount} failed)`}
+                    {doneCount} téléversé(s) !{errorCount > 0 && ` (${errorCount} échoué(s))`}
                   </p>
-                  <Link to="/"><Button variant="outline">View My Videos</Button></Link>
+                  <Link to="/"><Button variant="outline">Voir mes vidéos</Button></Link>
                 </div>
               )}
             </div>
@@ -383,13 +376,13 @@ export default function UploadPage() {
       <div className="w-72 shrink-0 space-y-4 hidden md:block">
         <Card>
           <CardContent className="p-4 space-y-4">
-            <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Batch Settings</h2>
+            <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Paramètres par lot</h2>
 
             {/* Project selector */}
             <div className="space-y-2">
-              <Label className="text-xs">Project *</Label>
+              <Label className="text-xs">Projet</Label>
               <Select value={bulkProjectId} onValueChange={(v) => { setBulkProjectId(v); setShowNewProject(false); }}>
-                <SelectTrigger><SelectValue placeholder="Select project" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Sélectionner un projet" /></SelectTrigger>
                 <SelectContent>
                   {projects.map((p) => (
                     <div key={p.id} className="flex items-center group">
@@ -402,15 +395,15 @@ export default function UploadPage() {
                       )}
                     </div>
                   ))}
-                  <SelectItem value="__new__">+ Create new project</SelectItem>
+                  <SelectItem value="__new__">+ Créer un nouveau projet</SelectItem>
                 </SelectContent>
               </Select>
               {bulkProjectId === "__new__" && (
                 <div className="space-y-2 pt-1">
-                  <Input placeholder="Project name" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} />
-                  <Input placeholder="Description (optional)" value={newProjectDesc} onChange={(e) => setNewProjectDesc(e.target.value)} />
+                  <Input placeholder="Nom du projet" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} />
+                  <Input placeholder="Description (facultatif)" value={newProjectDesc} onChange={(e) => setNewProjectDesc(e.target.value)} />
                   <Button size="sm" className="w-full" onClick={handleCreateProject} disabled={creatingProject || !newProjectName.trim()}>
-                    {creatingProject ? <Loader2 className="h-3 w-3 animate-spin" /> : "Create"}
+                    {creatingProject ? <Loader2 className="h-3 w-3 animate-spin" /> : "Créer"}
                   </Button>
                 </div>
               )}
@@ -418,7 +411,7 @@ export default function UploadPage() {
 
             {/* Tag selector - dropdown list like projects */}
             <div className="space-y-2">
-              <Label className="text-xs">Tags</Label>
+              <Label className="text-xs">Étiquettes</Label>
               {/* Selected tags */}
               {selectedBulkTags.length > 0 && (
                 <div className="flex flex-wrap gap-1">
@@ -432,7 +425,7 @@ export default function UploadPage() {
               {/* Tag list with checkboxes */}
               <div className="border rounded-md max-h-48 overflow-y-auto">
                 {existingTags.length === 0 ? (
-                  <p className="text-xs text-muted-foreground p-3">No tags yet</p>
+                  <p className="text-xs text-muted-foreground p-3">Aucune étiquette pour l'instant</p>
                 ) : (
                   existingTags.map((tag) => (
                     <div key={tag.id} className="flex items-center justify-between px-3 py-1.5 hover:bg-accent cursor-pointer group text-sm"
@@ -458,15 +451,15 @@ export default function UploadPage() {
               {/* Create new tag */}
               {!showNewTag ? (
                 <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => setShowNewTag(true)}>
-                  <Plus className="h-3 w-3 mr-1" /> Create new tag
+                  <Plus className="h-3 w-3 mr-1" /> Créer une nouvelle étiquette
                 </Button>
               ) : (
                 <div className="flex gap-1.5">
-                  <Input placeholder="Tag name" value={newTagName} onChange={(e) => setNewTagName(e.target.value)}
+                  <Input placeholder="Nom de l'étiquette" value={newTagName} onChange={(e) => setNewTagName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreateTag(); } }}
                     className="h-8 text-xs" />
                   <Button size="sm" onClick={handleCreateTag} disabled={creatingTag || !newTagName.trim()} className="h-8 shrink-0">
-                    {creatingTag ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
+                    {creatingTag ? <Loader2 className="h-3 w-3 animate-spin" /> : "Ajouter"}
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => { setShowNewTag(false); setNewTagName(""); }} className="h-8 shrink-0">
                     <X className="h-3 w-3" />

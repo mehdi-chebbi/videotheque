@@ -31,8 +31,7 @@ export interface Tag {
 export interface Video {
   id: string;
   title: string;
-  description: string | null;
-  project_id: string;
+  project_id: string | null;
   project_name?: string;
   file_path: string;
   thumbnail_path: string | null;

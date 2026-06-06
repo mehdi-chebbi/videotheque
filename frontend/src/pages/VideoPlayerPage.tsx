@@ -6,7 +6,6 @@ import { useAuthStore } from "../stores/auth";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Textarea } from "../components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Separator } from "../components/ui/separator";
@@ -30,7 +29,6 @@ export default function VideoPlayerPage() {
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState({
     title: "",
-    description: "",
     project_id: "",
     tagsInput: "",
   });
@@ -63,8 +61,7 @@ export default function VideoPlayerPage() {
     if (!video) return;
     setEditForm({
       title: video.title,
-      description: video.description || "",
-      project_id: video.project_id,
+      project_id: video.project_id || "",
       tagsInput: video.tags.map((t) => t.name).join(", "),
     });
     setShowEdit(true);
@@ -81,8 +78,7 @@ export default function VideoPlayerPage() {
         .filter(Boolean);
       await videosApi.update(id, {
         title: editForm.title,
-        description: editForm.description || undefined,
-        project_id: editForm.project_id,
+        project_id: editForm.project_id || undefined,
         tags,
       });
       setShowEdit(false);
@@ -96,7 +92,7 @@ export default function VideoPlayerPage() {
 
   const handleDelete = async () => {
     if (!id || !video) return;
-    if (!confirm(`Delete "${video.title}"? This cannot be undone.`)) return;
+    if (!confirm(`Supprimer "${video.title}" ? Cette action est irréversible.`)) return;
     try {
       await videosApi.delete(id);
       navigate("/videos");
@@ -118,9 +114,9 @@ export default function VideoPlayerPage() {
   if (!video) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-lg font-semibold">Video not found</h2>
+        <h2 className="text-lg font-semibold">Vidéo introuvable</h2>
         <Link to="/videos" className="text-sm text-muted-foreground hover:underline mt-2 inline-block">
-          Back to videos
+          Retour aux vidéos
         </Link>
       </div>
     );
@@ -129,7 +125,7 @@ export default function VideoPlayerPage() {
   return (
     <div className="space-y-6">
       <Link to="/videos" className="text-sm text-muted-foreground hover:underline flex items-center gap-1">
-        <ArrowLeft className="h-3 w-3" /> Back to Videos
+        <ArrowLeft className="h-3 w-3" /> Retour aux vidéos
       </Link>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -141,23 +137,23 @@ export default function VideoPlayerPage() {
               className="w-full max-h-[70vh]"
               src={`/api/videos/${video.id}/stream`}
             >
-              Your browser does not support video playback.
+              Votre navigateur ne prend pas en charge la lecture vidéo.
             </video>
           </div>
 
           <div className="flex items-center gap-2">
             <a href={`/api/videos/${video.id}/stream`} download>
               <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" /> Download
+                <Download className="h-4 w-4 mr-2" /> Télécharger
               </Button>
             </a>
             {canEdit && (
               <>
                 <Button variant="outline" size="sm" onClick={openEdit}>
-                  <Edit2 className="h-4 w-4 mr-2" /> Edit
+                  <Edit2 className="h-4 w-4 mr-2" /> Modifier
                 </Button>
                 <Button variant="destructive" size="sm" onClick={handleDelete}>
-                  <Trash2 className="h-4 w-4 mr-2" /> Delete
+                  <Trash2 className="h-4 w-4 mr-2" /> Supprimer
                 </Button>
               </>
             )}
@@ -171,40 +167,36 @@ export default function VideoPlayerPage() {
               <CardTitle className="text-lg">{video.title}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {video.description && (
-                <p className="text-sm text-muted-foreground">{video.description}</p>
-              )}
-
               <Separator />
 
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <FolderIcon className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Project</p>
-                    <Link to={`/projects/${video.project_id}`} className="font-medium hover:underline">
-                      {video.project_name}
-                    </Link>
+                {video.project_name && (
+                  <div className="flex items-center gap-2">
+                    <FolderIcon className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Projet</p>
+                      <p className="font-medium">{video.project_name}</p>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="flex items-center gap-2">
                   <HardDrive className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-xs text-muted-foreground">File Size</p>
+                    <p className="text-xs text-muted-foreground">Taille du fichier</p>
                     <p className="font-medium">{formatBytes(video.file_size)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Duration</p>
+                    <p className="text-xs text-muted-foreground">Durée</p>
                     <p className="font-medium">{formatDuration(video.duration)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Uploaded</p>
+                    <p className="text-xs text-muted-foreground">Téléversé</p>
                     <p className="font-medium">{formatDateTime(video.created_at)}</p>
                   </div>
                 </div>
@@ -212,13 +204,13 @@ export default function VideoPlayerPage() {
 
               {video.format && (
                 <div className="text-sm">
-                  <span className="text-muted-foreground">Format: </span>
+                  <span className="text-muted-foreground">Format : </span>
                   <span className="font-medium">{video.format}</span>
                 </div>
               )}
 
               <div>
-                <p className="text-xs text-muted-foreground mb-2">Uploaded by</p>
+                <p className="text-xs text-muted-foreground mb-2">Téléversé par</p>
                 <p className="text-sm font-medium">{video.uploaded_by_username}</p>
               </div>
             </CardContent>
@@ -230,7 +222,7 @@ export default function VideoPlayerPage() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Tag className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Tags</span>
+                  <span className="text-sm font-medium">Étiquettes</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {video.tags.map((tag) => (
@@ -249,11 +241,11 @@ export default function VideoPlayerPage() {
       <Dialog open={showEdit} onOpenChange={setShowEdit}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Video</DialogTitle>
+            <DialogTitle>Modifier la vidéo</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEdit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-title">Title</Label>
+              <Label htmlFor="edit-title">Titre</Label>
               <Input
                 id="edit-title"
                 value={editForm.title}
@@ -262,22 +254,13 @@ export default function VideoPlayerPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-desc">Description</Label>
-              <Textarea
-                id="edit-desc"
-                value={editForm.description}
-                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                rows={3}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Project</Label>
+              <Label>Projet</Label>
               <Select
                 value={editForm.project_id}
                 onValueChange={(v) => setEditForm({ ...editForm, project_id: v })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select project" />
+                  <SelectValue placeholder="Sélectionner un projet" />
                 </SelectTrigger>
                 <SelectContent>
                   {projects.map((p) => (
@@ -289,21 +272,21 @@ export default function VideoPlayerPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-tags">Tags (comma separated)</Label>
+              <Label htmlFor="edit-tags">Étiquettes (séparées par des virgules)</Label>
               <Input
                 id="edit-tags"
                 value={editForm.tagsInput}
                 onChange={(e) => setEditForm({ ...editForm, tagsInput: e.target.value })}
-                placeholder="e.g. marketing, campaign, 2024"
+                placeholder="ex. marketing, campagne, 2024"
               />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowEdit(false)}>
-                Cancel
+                Annuler
               </Button>
               <Button type="submit" disabled={saving}>
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                Save
+                Enregistrer
               </Button>
             </DialogFooter>
           </form>

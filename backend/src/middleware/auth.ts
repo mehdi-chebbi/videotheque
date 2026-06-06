@@ -19,7 +19,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res.status(401).json({ error: 'Access denied. No token provided.' });
+    res.status(401).json({ error: 'Accès refusé. Aucun jeton fourni.' });
     return;
   }
 
@@ -31,6 +31,6 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
     req.user = decoded;
     next();
   } catch {
-    res.status(401).json({ error: 'Invalid or expired token.' });
+    res.status(401).json({ error: 'Jeton invalide ou expiré.' });
   }
 }

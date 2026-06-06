@@ -19,6 +19,11 @@ export const authApi = {
       password,
     }),
   me: () => api.get<{ success: boolean; data: User }>("/auth/me"),
+  changePassword: (current_password: string, new_password: string) =>
+    api.post<{ success: boolean; data: { message: string } }>("/auth/change-password", {
+      current_password,
+      new_password,
+    }),
 };
 
 // ─── Users ─────────────────────────────────────────────────────
@@ -60,7 +65,7 @@ export const videosApi = {
     api.post<{ success: boolean; data: Video }>("/videos", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-  update: (id: string, data: { title?: string; description?: string; project_id?: string; tags?: string[] }) =>
+  update: (id: string, data: { title?: string; project_id?: string; tags?: string[] }) =>
     api.put<{ success: boolean; data: Video }>(`/videos/${id}`, data),
   delete: (id: string) => api.delete(`/videos/${id}`),
   batchDelete: (ids: string[]) => api.post<{ success: boolean; data: { message: string } }>("/videos/batch-delete", { ids }),

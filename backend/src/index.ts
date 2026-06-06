@@ -73,7 +73,7 @@ app.get('/stats', authenticate, async (req, res) => {
     }
   } catch (err) {
     console.error('[STATS] Error:', err);
-    res.status(500).json({ error: 'Internal server error.' });
+    res.status(500).json({ error: 'Erreur interne du serveur.' });
   }
 });
 

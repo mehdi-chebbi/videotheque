@@ -52,7 +52,7 @@ export default function UsersPage() {
       loadUsers();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } };
-      alert(axiosErr.response?.data?.error || "Failed to create user");
+      alert(axiosErr.response?.data?.error || "Échec de la création de l'utilisateur");
     } finally {
       setCreating(false);
     }
@@ -72,20 +72,20 @@ export default function UsersPage() {
       loadUsers();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } };
-      alert(axiosErr.response?.data?.error || "Failed to update user");
+      alert(axiosErr.response?.data?.error || "Échec de la mise à jour de l'utilisateur");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (user: User) => {
-    if (!confirm(`Delete user "${user.username}"?`)) return;
+    if (!confirm(`Supprimer l'utilisateur "${user.username}" ?`)) return;
     try {
       await usersApi.delete(user.id);
       loadUsers();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } };
-      alert(axiosErr.response?.data?.error || "Failed to delete user");
+      alert(axiosErr.response?.data?.error || "Échec de la suppression de l'utilisateur");
     }
   };
 
@@ -109,13 +109,13 @@ export default function UsersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">User Management</h1>
+          <h1 className="text-2xl font-bold">Gestion des utilisateurs</h1>
           <p className="text-muted-foreground">
-            {users.length} user{users.length !== 1 ? "s" : ""} &middot; {adminCount} admin &middot; {uploaderCount} uploader
+            {users.length} utilisateur{users.length !== 1 ? "s" : ""} &middot; {adminCount} admin &middot; {uploaderCount} uploader
           </p>
         </div>
         <Button onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4 mr-2" /> Add User
+          <Plus className="h-4 w-4 mr-2" /> Ajouter un utilisateur
         </Button>
       </div>
 
@@ -133,7 +133,7 @@ export default function UsersPage() {
                 </div>
                 <div>
                   <p className="font-medium">{user.username}</p>
-                  <p className="text-xs text-muted-foreground">Created {formatDate(user.created_at)}</p>
+                  <p className="text-xs text-muted-foreground">Créé {formatDate(user.created_at)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -156,11 +156,11 @@ export default function UsersPage() {
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create New User</DialogTitle>
+            <DialogTitle>Créer un utilisateur</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="create-username">Username</Label>
+              <Label htmlFor="create-username">Nom d'utilisateur</Label>
               <Input
                 id="create-username"
                 value={createForm.username}
@@ -169,7 +169,7 @@ export default function UsersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-password">Password</Label>
+              <Label htmlFor="create-password">Mot de passe</Label>
               <Input
                 id="create-password"
                 type="password"
@@ -180,7 +180,7 @@ export default function UsersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Role</Label>
+              <Label>Rôle</Label>
               <Select
                 value={createForm.role}
                 onValueChange={(v) => setCreateForm({ ...createForm, role: v })}
@@ -196,11 +196,11 @@ export default function UsersPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
-                Cancel
+                Annuler
               </Button>
               <Button type="submit" disabled={creating}>
                 {creating && <Loader2 className="h-4 w-4 animate-spin" />}
-                Create
+                Créer
               </Button>
             </DialogFooter>
           </form>
@@ -211,11 +211,11 @@ export default function UsersPage() {
       <Dialog open={!!editUser} onOpenChange={() => setEditUser(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
+            <DialogTitle>Modifier l'utilisateur</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEdit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-username">Username</Label>
+              <Label htmlFor="edit-username">Nom d'utilisateur</Label>
               <Input
                 id="edit-username"
                 value={editForm.username}
@@ -223,7 +223,7 @@ export default function UsersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-password">New Password (leave empty to keep current)</Label>
+              <Label htmlFor="edit-password">Nouveau mot de passe (laisser vide pour conserver l'actuel)</Label>
               <Input
                 id="edit-password"
                 type="password"
@@ -233,7 +233,7 @@ export default function UsersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Role</Label>
+              <Label>Rôle</Label>
               <Select
                 value={editForm.role}
                 onValueChange={(v) => setEditForm({ ...editForm, role: v })}
@@ -249,11 +249,11 @@ export default function UsersPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditUser(null)}>
-                Cancel
+                Annuler
               </Button>
               <Button type="submit" disabled={saving}>
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                Save
+                Enregistrer
               </Button>
             </DialogFooter>
           </form>

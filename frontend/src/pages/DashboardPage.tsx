@@ -83,7 +83,7 @@ export default function DashboardPage() {
 
   const handleDeleteSelected = async () => {
     if (selectedIds.size === 0) return;
-    if (!confirm(`Delete ${selectedIds.size} video(s)? This cannot be undone.`)) return;
+    if (!confirm(`Supprimer ${selectedIds.size} vidéo(s) ? Cette action est irréversible.`)) return;
     setDeleting(true);
     try {
       await videosApi.batchDelete(Array.from(selectedIds));
@@ -91,6 +91,24 @@ export default function DashboardPage() {
       loadDashboard();
     } catch (err) {
       console.error("Batch delete error:", err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteVideo = async (id: string, title: string) => {
+    if (!confirm(`Supprimer "${title}" ? Cette action est irréversible.`)) return;
+    setDeleting(true);
+    try {
+      await videosApi.delete(id);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      loadDashboard();
+    } catch (err) {
+      console.error("Delete video error:", err);
     } finally {
       setDeleting(false);
     }
@@ -106,7 +124,7 @@ export default function DashboardPage() {
   const canDeleteProject = (proj: Project) => proj.created_by === user?.id || user?.role === "admin";
 
   const handleDeleteTag = async (id: string, name: string) => {
-    if (!confirm(`Delete tag "${name}"?`)) return;
+    if (!confirm(`Supprimer l'étiquette "${name}" ?`)) return;
     try {
       const { tagsApi } = await import("../api");
       await tagsApi.delete(id);
@@ -117,7 +135,7 @@ export default function DashboardPage() {
   };
 
   const handleDeleteProject = async (id: string, name: string) => {
-    if (!confirm(`Delete project "${name}" and all its videos?`)) return;
+    if (!confirm(`Supprimer le projet "${name}" et toutes ses vidéos ?`)) return;
     try {
       const { projectsApi } = await import("../api");
       await projectsApi.delete(id);
@@ -130,28 +148,28 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+        <div className="animate-pulse text-muted-foreground">Chargement...</div>
       </div>
     );
   }
 
   const statCards = [
-    { label: "My Videos", value: stats?.total_videos ?? 0, icon: Video, color: "text-red-500" },
-    { label: "My Projects", value: stats?.total_projects ?? 0, icon: FolderOpen, color: "text-amber-500" },
-    { label: "My Tags", value: stats?.total_tags ?? 0, icon: Tag, color: "text-purple-500" },
-    { label: "My Storage", value: stats?.total_storage_human ?? "0 B", icon: HardDrive, color: "text-emerald-500" },
+    { label: "Mes vidéos", value: stats?.total_videos ?? 0, icon: Video, color: "text-red-500" },
+    { label: "Mes projets", value: stats?.total_projects ?? 0, icon: FolderOpen, color: "text-amber-500" },
+    { label: "Mes étiquettes", value: stats?.total_tags ?? 0, icon: Tag, color: "text-purple-500" },
+    { label: "Mon stockage", value: stats?.total_storage_human ?? "0 B", icon: HardDrive, color: "text-emerald-500" },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">My Dashboard</h1>
-          <p className="text-muted-foreground">Your videos, stats, and settings</p>
+          <h1 className="text-2xl font-bold">Mon tableau de bord</h1>
+          <p className="text-muted-foreground">Vos vidéos, statistiques et paramètres</p>
         </div>
         {canUpload() && (
           <Link to="/upload">
-            <Button><Upload className="h-4 w-4 mr-2" /> Upload Videos</Button>
+            <Button><Upload className="h-4 w-4 mr-2" /> Téléverser des vidéos</Button>
           </Link>
         )}
       </div>
@@ -178,9 +196,9 @@ export default function DashboardPage() {
         {/* Projects */}
         <Card>
           <CardContent className="p-4">
-            <h3 className="font-semibold text-sm mb-3">Projects ({projects.length})</h3>
+            <h3 className="font-semibold text-sm mb-3">Projets ({projects.length})</h3>
             {projects.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No projects yet</p>
+              <p className="text-sm text-muted-foreground">Aucun projet pour l'instant</p>
             ) : (
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
                 {projects.map((p) => (
@@ -207,9 +225,9 @@ export default function DashboardPage() {
         {/* Tags */}
         <Card>
           <CardContent className="p-4">
-            <h3 className="font-semibold text-sm mb-3">Tags ({tags.length})</h3>
+            <h3 className="font-semibold text-sm mb-3">Étiquettes ({tags.length})</h3>
             {tags.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No tags yet</p>
+              <p className="text-sm text-muted-foreground">Aucune étiquette pour l'instant</p>
             ) : (
               <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
                 {tags.map((t) => (
@@ -238,11 +256,11 @@ export default function DashboardPage() {
       {/* My Videos */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">My Videos ({pagination.total})</h2>
+          <h2 className="text-lg font-semibold">Mes vidéos ({pagination.total})</h2>
           {selectedIds.size > 0 && (
             <Button variant="destructive" size="sm" onClick={handleDeleteSelected} disabled={deleting}>
               {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
-              Delete ({selectedIds.size})
+              Supprimer ({selectedIds.size})
             </Button>
           )}
         </div>
@@ -253,18 +271,18 @@ export default function DashboardPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               className="pl-9"
-              placeholder="Search your videos..."
+              placeholder="Rechercher vos vidéos..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
             />
           </div>
-          <Button type="submit" variant="outline">Search</Button>
+          <Button type="submit" variant="outline">Rechercher</Button>
         </form>
 
         {videos.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center text-muted-foreground">
-              No videos yet. Upload your first video!
+              Aucune vidéo pour l'instant. Téléversez votre première vidéo !
             </CardContent>
           </Card>
         ) : (
@@ -273,22 +291,32 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2 px-1">
               <button onClick={toggleSelectAll} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
                 {selectedIds.size === videos.length ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
-                Select all
+                Tout sélectionner
               </button>
             </div>
 
             <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {videos.map((video) => (
-                <div key={video.id} className="relative">
-                  {/* Selection checkbox overlay */}
+                <div key={video.id} className="relative group">
+                  {/* Selection checkbox overlay - top left */}
                   <button
-                    onClick={() => toggleSelect(video.id)}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSelect(video.id); }}
                     className={`absolute top-2 left-2 z-10 rounded p-0.5 transition-colors ${
-                      selectedIds.has(video.id) ? "bg-primary text-primary-foreground" : "bg-black/50 text-white opacity-0 hover:opacity-100 group-hover:opacity-100"
+                      selectedIds.has(video.id) ? "bg-primary text-primary-foreground" : "bg-black/50 text-white opacity-0 group-hover:opacity-100"
                     }`}
                     style={{ opacity: selectedIds.has(video.id) ? 1 : undefined }}
                   >
                     {selectedIds.has(video.id) ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                  </button>
+
+                  {/* Single delete button - top right */}
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteVideo(video.id, video.title); }}
+                    className="absolute top-2 right-2 z-10 rounded bg-destructive/90 text-destructive-foreground p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive"
+                    disabled={deleting}
+                    title="Supprimer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
 
                   <Link to={`/videos/${video.id}`}>
@@ -308,7 +336,7 @@ export default function DashboardPage() {
                       <CardContent className="p-3">
                         <h3 className="font-medium text-sm truncate">{video.title}</h3>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {video.project_name} &middot; {formatBytes(video.file_size)}
+                          {video.project_name || "Sans projet"} &middot; {formatBytes(video.file_size)}
                         </p>
                       </CardContent>
                     </Card>
@@ -340,10 +368,10 @@ export default function DashboardPage() {
                     }).finally(() => setLoading(false));
                   }}
                 >
-                  Previous
+                  Précédent
                 </Button>
                 <span className="text-sm text-muted-foreground">
-                  Page {pagination.page} of {pagination.totalPages}
+                  Page {pagination.page} sur {pagination.totalPages}
                 </span>
                 <Button
                   variant="outline"
@@ -365,7 +393,7 @@ export default function DashboardPage() {
                     }).finally(() => setLoading(false));
                   }}
                 >
-                  Next
+                  Suivant
                 </Button>
               </div>
             )}

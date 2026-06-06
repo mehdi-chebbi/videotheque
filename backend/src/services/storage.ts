@@ -29,13 +29,16 @@ export function getVideoPaths(ext: string): { videoId: string; videoPath: string
 
 /**
  * Move a file from temp to its final location
+ * Always uses copy + delete instead of rename, because renameSync
+ * can silently fail on Docker bind mounts (Windows/WSL2).
  */
 export function moveFile(from: string, to: string): void {
   const targetDir = path.dirname(to);
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });
   }
-  fs.renameSync(from, to);
+  fs.copyFileSync(from, to);
+  fs.unlinkSync(from);
 }
 
 /**
@@ -59,6 +62,9 @@ export function deleteVideoFiles(videoId: string, ext: string): void {
  * Get file size in bytes
  */
 export function getFileSize(filePath: string): number {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File not found: ${filePath}`);
+  }
   const stats = fs.statSync(filePath);
   return stats.size;
 }

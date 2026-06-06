@@ -9,6 +9,7 @@ import AllVideosPage from "./pages/AllVideosPage";
 import VideoPlayerPage from "./pages/VideoPlayerPage";
 import UploadPage from "./pages/UploadPage";
 import UsersPage from "./pages/UsersPage";
+import ChangePasswordPage from "./pages/ChangePasswordPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,6 +72,16 @@ function AppRoutes() {
           <ProtectedRoute requireAdmin>
             <AppLayout>
               <UsersPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/change-password"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <ChangePasswordPage />
             </AppLayout>
           </ProtectedRoute>
         }

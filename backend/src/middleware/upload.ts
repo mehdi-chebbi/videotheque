@@ -39,7 +39,7 @@ const fileFilter = (_req: Express.Request, file: Express.Multer.File, cb: multer
   if (videoMimeTypes.includes(file.mimetype) || file.mimetype.startsWith('video/')) {
     cb(null, true);
   } else {
-    cb(new Error(`Invalid file type: ${file.mimetype}. Only video files are allowed.`));
+    cb(new Error(`Type de fichier invalide : ${file.mimetype}. Seuls les fichiers vidéo sont autorisés.`));
   }
 };
 

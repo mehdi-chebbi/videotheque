@@ -26,8 +26,7 @@ const CREATE_VIDEOS_TABLE = `
 CREATE TABLE IF NOT EXISTS videos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title VARCHAR(255) NOT NULL,
-  description TEXT,
-  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
   file_path VARCHAR(500) NOT NULL,
   thumbnail_path VARCHAR(500),
   file_size BIGINT NOT NULL DEFAULT 0,
