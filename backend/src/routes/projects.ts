@@ -9,7 +9,7 @@ const router = Router();
 router.get('/', authenticate, async (_req: Request, res: Response): Promise<void> => {
   try {
     const result = await db.query(`
-      SELECT p.*, u.username as created_by_username,
+      SELECT p.*, u.email as created_by_email,
         (SELECT COUNT(*) FROM videos WHERE project_id = p.id) as video_count
       FROM projects p
       JOIN users u ON p.created_by = u.id
@@ -28,7 +28,7 @@ router.get('/:id', authenticate, async (req: Request, res: Response): Promise<vo
 
   try {
     const result = await db.query(`
-      SELECT p.*, u.username as created_by_username,
+      SELECT p.*, u.email as created_by_email,
         (SELECT COUNT(*) FROM videos WHERE project_id = p.id) as video_count
       FROM projects p
       JOIN users u ON p.created_by = u.id

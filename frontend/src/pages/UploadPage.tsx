@@ -177,10 +177,23 @@ export default function UploadPage() {
         {items.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-foreground">{items.length} vidéo{items.length !== 1 ? "s" : ""}{uploading && ` — ${uploadCount}/${pendingCount + doneCount + errorCount} téléversé(s)`}</h2>
-              {!uploading && items.some((i) => i.status === "pending") && (
-                <Button variant="ghost" size="sm" onClick={() => setItems([])} className="text-muted-foreground hover:text-secondary">Tout effacer</Button>
-              )}
+              <h2 className="font-semibold text-foreground">{items.length} vidéo{items.length !== 1 ? "s" : ""}{uploading && ` — ${uploadCount}/${items.length} téléversé(s)`}</h2>
+              <div className="flex items-center gap-2">
+                {items.some((i) => i.status === "pending") && (
+                  <Button className="gradient-gold hover:opacity-90 text-secondary-foreground font-semibold shadow-lg glow-gold" disabled={!canUpload} onClick={handleUploadAll}>
+                    {uploading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Téléversement {uploadCount}...</>
+                      : <><Upload className="h-4 w-4 mr-2" />Téléverser {pendingCount} vidéo{pendingCount !== 1 ? "s" : ""}</>}
+                  </Button>
+                )}
+                {!uploading && items.some((i) => i.status === "pending") && (
+                  <Button variant="ghost" size="sm" onClick={() => setItems([])} className="text-muted-foreground hover:text-secondary">Tout effacer</Button>
+                )}
+                {errorCount > 0 && !uploading && (
+                  <Button variant="ghost" size="sm" onClick={() => setItems((prev) => prev.filter((i) => i.status !== "error"))} className="text-muted-foreground hover:text-secondary">
+                    Effacer les échoués
+                  </Button>
+                )}
+              </div>
             </div>
 
             {items.map((item) => {
@@ -251,17 +264,7 @@ export default function UploadPage() {
               );
             })}
 
-            <div className="flex items-center gap-4">
-              <Button className="flex-1 gradient-gold hover:opacity-90 text-secondary-foreground font-semibold shadow-lg glow-gold" disabled={!canUpload} onClick={handleUploadAll}>
-                {uploading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Téléversement {uploadCount}...</>
-                  : <><Upload className="h-4 w-4 mr-2" />Téléverser {pendingCount} vidéo{pendingCount !== 1 ? "s" : ""}</>}
-              </Button>
-              {errorCount > 0 && !uploading && (
-                <Button variant="ghost" onClick={() => setItems((prev) => prev.filter((i) => i.status !== "error"))} className="text-muted-foreground hover:text-secondary">
-                  Effacer les échoués
-                </Button>
-              )}
-            </div>
+
           </div>
         )}
       </div>

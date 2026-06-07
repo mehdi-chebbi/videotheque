@@ -15,10 +15,10 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [createForm, setCreateForm] = useState({ username: "", password: "", role: "uploader" });
+  const [createForm, setCreateForm] = useState({ email: "", password: "", role: "uploader" });
   const [creating, setCreating] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
-  const [editForm, setEditForm] = useState({ username: "", password: "", role: "" });
+  const [editForm, setEditForm] = useState({ email: "", password: "", role: "" });
   const [saving, setSaving] = useState(false);
 
   const loadUsers = async () => {
@@ -31,7 +31,7 @@ export default function UsersPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault(); setCreating(true);
-    try { await usersApi.create(createForm); setShowCreate(false); setCreateForm({ username: "", password: "", role: "uploader" }); loadUsers(); }
+    try { await usersApi.create(createForm); setShowCreate(false); setCreateForm({ email: "", password: "", role: "uploader" }); loadUsers(); }
     catch (err: unknown) { const axiosErr = err as { response?: { data?: { error?: string } } }; alert(axiosErr.response?.data?.error || "Échec de la création"); }
     finally { setCreating(false); }
   };
@@ -39,8 +39,8 @@ export default function UsersPage() {
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!editUser) return; setSaving(true);
     try {
-      const data: { username?: string; password?: string; role?: string } = {};
-      if (editForm.username && editForm.username !== editUser.username) data.username = editForm.username;
+      const data: { email?: string; password?: string; role?: string } = {};
+      if (editForm.email && editForm.email !== editUser.email) data.email = editForm.email;
       if (editForm.password) data.password = editForm.password;
       if (editForm.role !== editUser.role) data.role = editForm.role;
       await usersApi.update(editUser.id, data); setEditUser(null); loadUsers();
@@ -49,12 +49,12 @@ export default function UsersPage() {
   };
 
   const handleDelete = async (user: User) => {
-    if (!confirm(`Supprimer l'utilisateur "${user.username}" ?`)) return;
+    if (!confirm(`Supprimer l'utilisateur "${user.email}" ?`)) return;
     try { await usersApi.delete(user.id); loadUsers(); }
     catch (err: unknown) { const axiosErr = err as { response?: { data?: { error?: string } } }; alert(axiosErr.response?.data?.error || "Échec de la suppression"); }
   };
 
-  const openEdit = (user: User) => { setEditUser(user); setEditForm({ username: user.username, password: "", role: user.role }); };
+  const openEdit = (user: User) => { setEditUser(user); setEditForm({ email: user.email, password: "", role: user.role }); };
 
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-secondary" /></div>;
 
@@ -83,7 +83,7 @@ export default function UsersPage() {
                   {user.role === "admin" ? <Shield className="h-4 w-4 text-white" /> : <Upload className="h-4 w-4 text-white" />}
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">{user.username}</p>
+                  <p className="font-medium text-foreground">{user.email}</p>
                   <p className="text-xs text-muted-foreground">Créé {formatDate(user.created_at)}</p>
                 </div>
               </div>
@@ -103,7 +103,7 @@ export default function UsersPage() {
         <DialogContent className="bg-card border-border">
           <DialogHeader><DialogTitle className="text-foreground">Créer un utilisateur</DialogTitle></DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
-            <div className="space-y-2"><Label className="text-muted-foreground">Nom d'utilisateur</Label><Input value={createForm.username} onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })} required className={inputCls} /></div>
+            <div className="space-y-2"><Label className="text-muted-foreground">Adresse e-mail</Label><Input type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} required className={inputCls} /></div>
             <div className="space-y-2"><Label className="text-muted-foreground">Mot de passe</Label><Input type="password" value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} required minLength={6} className={inputCls} /></div>
             <div className="space-y-2">
               <Label className="text-muted-foreground">Rôle</Label>
@@ -124,7 +124,7 @@ export default function UsersPage() {
         <DialogContent className="bg-card border-border">
           <DialogHeader><DialogTitle className="text-foreground">Modifier l'utilisateur</DialogTitle></DialogHeader>
           <form onSubmit={handleEdit} className="space-y-4">
-            <div className="space-y-2"><Label className="text-muted-foreground">Nom d'utilisateur</Label><Input value={editForm.username} onChange={(e) => setEditForm({ ...editForm, username: e.target.value })} className={inputCls} /></div>
+            <div className="space-y-2"><Label className="text-muted-foreground">Adresse e-mail</Label><Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} className={inputCls} /></div>
             <div className="space-y-2"><Label className="text-muted-foreground">Nouveau mot de passe</Label><Input type="password" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} minLength={6} className={inputCls} /></div>
             <div className="space-y-2">
               <Label className="text-muted-foreground">Rôle</Label>

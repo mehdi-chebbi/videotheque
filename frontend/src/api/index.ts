@@ -13,9 +13,9 @@ import type {
 
 // ─── Auth ──────────────────────────────────────────────────────
 export const authApi = {
-  login: (username: string, password: string) =>
+  login: (email: string, password: string) =>
     api.post<{ success: boolean; data: LoginResponse }>("/auth/login", {
-      username,
+      email,
       password,
     }),
   me: () => api.get<{ success: boolean; data: User }>("/auth/me"),
@@ -29,9 +29,9 @@ export const authApi = {
 // ─── Users ─────────────────────────────────────────────────────
 export const usersApi = {
   list: () => api.get<{ success: boolean; data: User[] }>("/users"),
-  create: (data: { username: string; password: string; role: string }) =>
+  create: (data: { email: string; password: string; role: string }) =>
     api.post<{ success: boolean; data: User }>("/users", data),
-  update: (id: string, data: { username?: string; password?: string; role?: string }) =>
+  update: (id: string, data: { email?: string; password?: string; role?: string }) =>
     api.put<{ success: boolean; data: User }>(`/users/${id}`, data),
   delete: (id: string) => api.delete(`/users/${id}`),
 };

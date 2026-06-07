@@ -74,7 +74,7 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
 
     // Get paginated results
     const result = await db.query(
-      `SELECT v.*, p.name as project_name, u.username as uploaded_by_username
+      `SELECT v.*, p.name as project_name, u.email as uploaded_by_email
        FROM videos v
        LEFT JOIN projects p ON v.project_id = p.id
        JOIN users u ON v.uploaded_by = u.id
@@ -121,7 +121,7 @@ router.get('/:id', authenticate, async (req: Request, res: Response): Promise<vo
 
   try {
     const result = await db.query(`
-      SELECT v.*, p.name as project_name, u.username as uploaded_by_username
+      SELECT v.*, p.name as project_name, u.email as uploaded_by_email
       FROM videos v
       LEFT JOIN projects p ON v.project_id = p.id
       JOIN users u ON v.uploaded_by = u.id
@@ -419,7 +419,7 @@ router.put('/:id', authenticate, requireUploaderOrAdmin(), async (req: Request, 
 
     // Fetch updated video with tags
     const result = await db.query(`
-      SELECT v.*, p.name as project_name, u.username as uploaded_by_username
+      SELECT v.*, p.name as project_name, u.email as uploaded_by_email
       FROM videos v
       LEFT JOIN projects p ON v.project_id = p.id
       JOIN users u ON v.uploaded_by = u.id

@@ -135,7 +135,7 @@ export default function VideoPlayerPage() {
               )}
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Téléversé par</p>
-                <p className="text-sm font-medium text-foreground">{video.uploaded_by_username}</p>
+                <p className="text-sm font-medium text-foreground">{video.uploaded_by_email}</p>
               </div>
             </CardContent>
           </Card>

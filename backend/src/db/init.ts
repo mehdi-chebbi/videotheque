@@ -3,7 +3,7 @@ import db from './connection';
 const CREATE_USERS_TABLE = `
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  username VARCHAR(100) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'uploader')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -102,9 +102,9 @@ $$;
 `;
 
 const SEED_ADMIN = `
-INSERT INTO users (username, password_hash, role)
-SELECT 'admin', '$2a$12$C0Lq7EwPHmedn76pj76sL.REyOfhM/Ul5LqxmvMcakhm39hHOnMVe', 'admin'
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
+INSERT INTO users (email, password_hash, role)
+SELECT 'admin@videotheque.local', '$2a$12$C0Lq7EwPHmedn76pj76sL.REyOfhM/Ul5LqxmvMcakhm39hHOnMVe', 'admin'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@videotheque.local');
 `;
 
 export async function initializeDatabase(): Promise<void> {

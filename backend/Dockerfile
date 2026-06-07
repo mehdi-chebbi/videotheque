@@ -23,6 +23,7 @@ COPY package.json bun.lock ./
 RUN npm install --omit=dev --frozen-lockfile
 
 COPY --from=builder /app/dist ./dist
+COPY seed-users.js ./seed-users.js
 
 # Create storage directory
 RUN mkdir -p /app/storage

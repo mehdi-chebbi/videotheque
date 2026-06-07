@@ -9,7 +9,7 @@ const router = Router();
 router.get('/', authenticate, async (_req: Request, res: Response): Promise<void> => {
   try {
     const result = await db.query(`
-      SELECT t.*, u.username as created_by_username,
+      SELECT t.*, u.email as created_by_email,
         (SELECT COUNT(*) FROM video_tags WHERE tag_id = t.id) as video_count
       FROM tags t
       LEFT JOIN users u ON t.created_by = u.id

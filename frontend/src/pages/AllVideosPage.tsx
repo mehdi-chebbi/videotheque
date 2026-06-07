@@ -105,7 +105,7 @@ export default function AllVideosPage() {
                   <SelectTrigger className="bg-muted border-border"><SelectValue placeholder="Tous les utilisateurs" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tous les utilisateurs</SelectItem>
-                    {users.map((u) => <SelectItem key={u.id} value={u.id}>{u.username}</SelectItem>)}
+                    {users.map((u) => <SelectItem key={u.id} value={u.id}>{u.email}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -168,7 +168,7 @@ export default function AllVideosPage() {
                   </div>
                   <CardContent className="p-3">
                     <h3 className="font-medium text-sm truncate text-foreground">{video.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{video.uploaded_by_username} &middot; {formatBytes(video.file_size)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{video.uploaded_by_email} &middot; {formatBytes(video.file_size)}</p>
                     <div className="flex gap-1 mt-2 flex-wrap">
                       {video.tags.slice(0, 3).map((tag) => (
                         <Badge key={tag.id} variant="secondary" className="text-[10px] px-1.5 py-0 bg-secondary/15 text-secondary border border-secondary/25">{tag.name}</Badge>

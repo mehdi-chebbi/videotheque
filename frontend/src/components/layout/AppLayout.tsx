@@ -100,7 +100,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="hidden sm:inline">Photothèque</span>
             </a>
             <span className="text-sm text-muted-foreground hidden sm:inline">
-              {user?.username}
+              {user?.email}
             </span>
             <Badge role={user?.role} />
             <Button

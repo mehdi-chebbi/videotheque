@@ -10,7 +10,7 @@ const router = Router();
 router.get('/', authenticate, requireAdmin(), async (_req: Request, res: Response): Promise<void> => {
   try {
     const result = await db.query(
-      'SELECT id, username, role, created_at, updated_at FROM users ORDER BY created_at DESC'
+      'SELECT id, email, role, created_at, updated_at FROM users ORDER BY created_at DESC'
     );
     success(res, result.rows);
   } catch (err) {
@@ -21,10 +21,10 @@ router.get('/', authenticate, requireAdmin(), async (_req: Request, res: Respons
 
 // POST /users - Create a new user (admin only)
 router.post('/', authenticate, requireAdmin(), async (req: Request, res: Response): Promise<void> => {
-  const { username, password, role } = req.body;
+  const { email, password, role } = req.body;
 
-  if (!username || !password || !role) {
-    error(res, 'Nom d\'utilisateur, mot de passe et rôle requis.', 400);
+  if (!email || !password || !role) {
+    error(res, 'Adresse e-mail, mot de passe et rôle requis.', 400);
     return;
   }
 
@@ -39,9 +39,9 @@ router.post('/', authenticate, requireAdmin(), async (req: Request, res: Respons
   }
 
   try {
-    const existing = await db.query('SELECT id FROM users WHERE username = $1', [username]);
+    const existing = await db.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existing.rows.length > 0) {
-      error(res, 'Ce nom d\'utilisateur existe déjà.', 409);
+      error(res, 'Cette adresse e-mail est déjà utilisée.', 409);
       return;
     }
 
@@ -49,8 +49,8 @@ router.post('/', authenticate, requireAdmin(), async (req: Request, res: Respons
     const passwordHash = await bcrypt.hash(password, salt);
 
     const result = await db.query(
-      'INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) RETURNING id, username, role, created_at',
-      [username, passwordHash, role]
+      'INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3) RETURNING id, email, role, created_at',
+      [email, passwordHash, role]
     );
 
     success(res, result.rows[0], 201);
@@ -63,7 +63,7 @@ router.post('/', authenticate, requireAdmin(), async (req: Request, res: Respons
 // PUT /users/:id - Update a user (admin only)
 router.put('/:id', authenticate, requireAdmin(), async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const { username, password, role } = req.body;
+  const { email, password, role } = req.body;
 
   try {
     const existing = await db.query('SELECT id FROM users WHERE id = $1', [id]);
@@ -76,14 +76,14 @@ router.put('/:id', authenticate, requireAdmin(), async (req: Request, res: Respo
     const values: unknown[] = [];
     let paramIndex = 1;
 
-    if (username) {
-      const duplicate = await db.query('SELECT id FROM users WHERE username = $1 AND id != $2', [username, id]);
+    if (email) {
+      const duplicate = await db.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, id]);
       if (duplicate.rows.length > 0) {
-        error(res, 'Ce nom d\'utilisateur est déjà pris.', 409);
+        error(res, 'Cette adresse e-mail est déjà utilisée.', 409);
         return;
       }
-      updates.push(`username = $${paramIndex++}`);
-      values.push(username);
+      updates.push(`email = $${paramIndex++}`);
+      values.push(email);
     }
 
     if (password) {
@@ -113,7 +113,7 @@ router.put('/:id', authenticate, requireAdmin(), async (req: Request, res: Respo
 
     values.push(id);
     const result = await db.query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, username, role, created_at, updated_at`,
+      `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, email, role, created_at, updated_at`,
       values
     );
 

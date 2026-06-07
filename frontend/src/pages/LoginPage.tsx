@@ -9,7 +9,7 @@ import { Label } from "../components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,7 +23,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await authApi.login(username, password);
+      const res = await authApi.login(email, password);
       const { token, user } = res.data.data;
       setAuth(token, user);
       navigate("/");
@@ -66,13 +66,13 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-muted-foreground">Nom d'utilisateur</Label>
+              <Label htmlFor="email" className="text-muted-foreground">Adresse e-mail</Label>
               <Input
-                id="username"
-                type="text"
-                placeholder="Entrez votre nom d'utilisateur"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="email"
+                type="email"
+                placeholder="Entrez votre adresse e-mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 autoFocus
                 className="h-11 bg-muted border-border text-foreground placeholder:text-muted-foreground/60 focus:border-secondary focus:ring-secondary/30"

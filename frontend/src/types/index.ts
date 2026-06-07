@@ -2,7 +2,7 @@ export type Role = "admin" | "uploader";
 
 export interface User {
   id: string;
-  username: string;
+  email: string;
   role: Role;
   created_at: string;
   updated_at?: string;
@@ -12,7 +12,7 @@ export interface Project {
   id: string;
   name: string;
   created_by: string;
-  created_by_username?: string;
+  created_by_email?: string;
   video_count?: number;
   created_at: string;
   updated_at: string;
@@ -22,7 +22,7 @@ export interface Tag {
   id: string;
   name: string;
   created_by: string | null;
-  created_by_username?: string;
+  created_by_email?: string;
   video_count?: number;
   created_at: string;
 }
@@ -38,7 +38,7 @@ export interface Video {
   duration: number | null;
   format: string | null;
   uploaded_by: string;
-  uploaded_by_username?: string;
+  uploaded_by_email?: string;
   tags: Tag[];
   created_at: string;
   updated_at: string;

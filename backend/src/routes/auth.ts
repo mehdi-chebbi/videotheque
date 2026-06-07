@@ -11,21 +11,21 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
 // POST /auth/login
 router.post('/login', async (req: Request, res: Response): Promise<void> => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
 
-  if (!username || !password) {
-    error(res, 'Nom d\'utilisateur et mot de passe requis.', 400);
+  if (!email || !password) {
+    error(res, 'Adresse e-mail et mot de passe requis.', 400);
     return;
   }
 
   try {
     const result = await db.query(
-      'SELECT id, username, password_hash, role FROM users WHERE username = $1',
-      [username]
+      'SELECT id, email, password_hash, role FROM users WHERE email = $1',
+      [email]
     );
 
     if (result.rows.length === 0) {
-      error(res, 'Nom d\'utilisateur ou mot de passe incorrect.', 401);
+      error(res, 'Adresse e-mail ou mot de passe incorrect.', 401);
       return;
     }
 
@@ -33,12 +33,12 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     const isValid = await bcrypt.compare(password, user.password_hash);
 
     if (!isValid) {
-      error(res, 'Nom d\'utilisateur ou mot de passe incorrect.', 401);
+      error(res, 'Adresse e-mail ou mot de passe incorrect.', 401);
       return;
     }
 
     const token = jwt.sign(
-      { userId: user.id, username: user.username, role: user.role },
+      { userId: user.id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
     );
@@ -47,7 +47,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       token,
       user: {
         id: user.id,
-        username: user.username,
+        email: user.email,
         role: user.role,
       },
     });
@@ -61,7 +61,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 router.get('/me', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await db.query(
-      'SELECT id, username, role, created_at FROM users WHERE id = $1',
+      'SELECT id, email, role, created_at FROM users WHERE id = $1',
       [req.user!.userId]
     );
 
