@@ -91,7 +91,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
           <div className="flex items-center gap-3">
             <a
-              href="http://192.168.2.127"
+              href="http://192.168.2.128"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 border border-secondary/40 text-secondary hover:bg-secondary/10 hover:text-secondary"
